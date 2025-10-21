@@ -1,0 +1,159 @@
+/* ===========================================
+   VARIABLES DE COULEURS
+=========================================== */
+:root {
+  --primary: #3498db;
+  --secondary: #2ecc71;
+  --danger: #e74c3c;
+  --warning: #f39c12;
+  --dark: #2c3e50;
+  --light: #f5f6fa;
+  --gray: #95a5a6;
+}
+
+/* ===========================================
+   RESET & TYPOGRAPHIE
+=========================================== */
+.analyse-types-page {
+  padding: 2rem 1rem;
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+  background: var(--light);
+}
+
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  margin-bottom: 2rem;
+}
+
+.page-header h1 {
+  font-size: 2rem;
+  font-weight: 600;
+  color: var(--dark);
+}
+
+/* ===========================================
+   BUTTONS
+=========================================== */
+.analyse-types-page .MuiButton-root {
+  text-transform: none;
+  font-weight: 600;
+  border-radius: 8px;
+  transition: all 0.3s ease;
+}
+
+.analyse-types-page .MuiButton-root:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+/* ===========================================
+   ALERTS
+=========================================== */
+.analyse-types-page .MuiAlert-root {
+  border-radius: 8px;
+  font-size: 0.95rem;
+  margin-bottom: 1rem;
+}
+
+/* ===========================================
+   TABLE
+=========================================== */
+.analyse-types-page .MuiTableContainer-root {
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  margin-top: 1rem;
+}
+
+.analyse-types-page .MuiTableCell-root {
+  padding: 0.75rem 1rem;
+}
+
+.analyse-types-page .MuiTableHead-root .MuiTableCell-root {
+  background: var(--dark);
+  color: white;
+  font-weight: 600;
+}
+
+.analyse-types-page .MuiTableRow-root:hover {
+  background: #f0f4f8;
+}
+
+/* ===========================================
+   CHIPS
+=========================================== */
+.analyse-types-page .MuiChip-root {
+  font-weight: 500;
+  border-radius: 8px;
+  font-size: 0.85rem;
+}
+
+.analyse-types-page .MuiChip-colorPrimary {
+  border: 1px solid var(--primary);
+}
+
+/* ===========================================
+   DIALOG
+=========================================== */
+.analyse-types-page .MuiDialog-paper {
+  border-radius: 12px;
+  padding: 1.5rem;
+}
+
+.analyse-types-page .MuiDialogTitle-root {
+  font-weight: 600;
+  font-size: 1.5rem;
+  color: var(--dark);
+}
+
+.analyse-types-page .MuiDialogContent-root {
+  padding-top: 0.5rem;
+}
+
+.analyse-types-page .MuiDialogActions-root {
+  padding: 1rem 0;
+}
+
+.analyse-types-page .MuiTextField-root {
+  margin-bottom: 1rem;
+}
+
+/* ===========================================
+   RESPONSIVE
+=========================================== */
+@media (max-width: 1024px) {
+  .page-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .analyse-types-page {
+    padding: 1rem;
+  }
+
+  .analyse-types-page .MuiTableContainer-root {
+    overflow-x: auto;
+  }
+
+  .analyse-types-page .MuiTableCell-root {
+    padding: 0.5rem 0.75rem;
+    font-size: 0.85rem;
+  }
+
+  .analyse-types-page .MuiButton-root {
+    width: 100%;
+  }
+}
+
+@media (max-width: 480px) {
+  .analyse-types-page .MuiDialog-paper {
+    width: 95%;
+    padding: 1rem;
+  }
+}

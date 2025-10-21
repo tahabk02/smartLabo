@@ -1,0 +1,66 @@
+@import "../styles/variables.css";
+
+.layout {
+  display: flex;
+  min-height: 100vh;
+  background: var(--bg-dark-light);
+  position: relative;
+}
+
+.mainContent {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  margin-left: var(--sidebar-width);
+  transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  min-height: 100vh;
+}
+
+.mainContent.collapsed {
+  margin-left: var(--sidebar-collapsed-width);
+}
+
+.pageContent {
+  flex: 1;
+  padding: 2rem;
+  overflow-y: auto;
+  background: var(--bg-dark-light);
+  min-height: calc(100vh - var(--navbar-height));
+}
+
+/* Overlay mobile */
+.overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(6px);
+  z-index: var(--z-overlay);
+  animation: fadeIn 0.3s ease;
+  cursor: pointer;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* Responsive */
+@media (max-width: 968px) {
+  .mainContent,
+  .mainContent.collapsed {
+    margin-left: 0;
+  }
+}
+
+@media (max-width: 640px) {
+  .pageContent {
+    padding: 1rem;
+  }
+}

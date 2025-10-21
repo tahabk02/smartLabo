@@ -1,0 +1,612 @@
+/* Container Principal */
+.appointmentsPage {
+  padding: 2rem;
+  max-width: 1400px;
+  margin: 0 auto;
+  animation: fadeIn 0.3s ease-in;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Header */
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+  padding-bottom: 1.5rem;
+  border-bottom: 2px solid #f0f0f0;
+}
+
+.titleSection {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.titleIcon {
+  width: 60px;
+  height: 60px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 1.8rem;
+}
+
+.title {
+  font-size: 2rem;
+  font-weight: 700;
+  color: #1a202c;
+  margin: 0;
+}
+
+.subtitle {
+  color: #718096;
+  margin: 0.25rem 0 0 0;
+  font-size: 0.95rem;
+}
+
+.btnPrimary {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 0.875rem 1.75rem;
+  border: none;
+  border-radius: 12px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+}
+
+.btnPrimary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+}
+
+/* Alerts */
+.alert {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1rem 1.25rem;
+  border-radius: 12px;
+  margin-bottom: 1.5rem;
+  animation: slideDown 0.3s ease;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.alertError {
+  background-color: #fff5f5;
+  border: 1px solid #fc8181;
+  color: #c53030;
+}
+
+.alertSuccess {
+  background-color: #f0fff4;
+  border: 1px solid #68d391;
+  color: #2f855a;
+}
+
+.alert button {
+  margin-left: auto;
+  background: none;
+  border: none;
+  font-size: 1.25rem;
+  cursor: pointer;
+  color: inherit;
+  opacity: 0.7;
+  transition: opacity 0.2s;
+}
+
+.alert button:hover {
+  opacity: 1;
+}
+
+/* Controls */
+.controls {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 2rem;
+  flex-wrap: wrap;
+}
+
+.searchBox {
+  flex: 1;
+  min-width: 250px;
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.searchBox svg {
+  position: absolute;
+  left: 1rem;
+  color: #a0aec0;
+  font-size: 1.2rem;
+}
+
+.searchInput {
+  width: 100%;
+  padding: 0.875rem 1rem 0.875rem 3rem;
+  border: 2px solid #e2e8f0;
+  border-radius: 12px;
+  font-size: 1rem;
+  transition: all 0.3s ease;
+  background: white;
+}
+
+.searchInput:focus {
+  outline: none;
+  border-color: #667eea;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.filters {
+  display: flex;
+  gap: 1rem;
+}
+
+.filterSelect {
+  padding: 0.875rem 1rem;
+  border: 2px solid #e2e8f0;
+  border-radius: 12px;
+  font-size: 0.95rem;
+  background: white;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  min-width: 180px;
+}
+
+.filterSelect:focus {
+  outline: none;
+  border-color: #667eea;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+/* Loading State */
+.loadingContainer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 4rem 2rem;
+  color: #718096;
+}
+
+.spinner {
+  font-size: 3rem;
+  animation: spin 1s linear infinite;
+  color: #667eea;
+  margin-bottom: 1rem;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Empty State */
+.emptyState {
+  text-align: center;
+  padding: 4rem 2rem;
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.emptyIcon {
+  font-size: 4rem;
+  color: #cbd5e0;
+  margin-bottom: 1rem;
+}
+
+.emptyState h3 {
+  font-size: 1.5rem;
+  color: #2d3748;
+  margin-bottom: 0.5rem;
+}
+
+.emptyState p {
+  color: #718096;
+  font-size: 1rem;
+}
+
+/* Appointments List */
+.appointmentsList {
+  background: white;
+  border-radius: 16px;
+  padding: 1.5rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.listHeader {
+  padding-bottom: 1rem;
+  margin-bottom: 1.5rem;
+  border-bottom: 2px solid #f7fafc;
+  font-weight: 600;
+  color: #4a5568;
+  font-size: 0.95rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* Cards Grid */
+.cardsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+  gap: 1.5rem;
+}
+
+/* Appointment Card */
+.card {
+  background: white;
+  border: 2px solid #e2e8f0;
+  border-radius: 16px;
+  padding: 1.5rem;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.card::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 4px;
+  height: 100%;
+  transition: width 0.3s ease;
+}
+
+.card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.1);
+}
+
+.card:hover::before {
+  width: 6px;
+}
+
+/* Card Status Colors */
+.card-pending::before {
+  background: linear-gradient(180deg, #f6ad55 0%, #ed8936 100%);
+}
+
+.card-confirmed::before {
+  background: linear-gradient(180deg, #48bb78 0%, #38a169 100%);
+}
+
+.card-cancelled::before {
+  background: linear-gradient(180deg, #fc8181 0%, #f56565 100%);
+}
+
+.card-completed::before {
+  background: linear-gradient(180deg, #667eea 0%, #764ba2 100%);
+}
+
+/* Card Header */
+.cardHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.25rem;
+}
+
+.statusBadge {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  border-radius: 20px;
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.card-pending .statusBadge {
+  background: #feebc8;
+  color: #c05621;
+}
+
+.card-confirmed .statusBadge {
+  background: #c6f6d5;
+  color: #276749;
+}
+
+.card-cancelled .statusBadge {
+  background: #fed7d7;
+  color: #c53030;
+}
+
+.card-completed .statusBadge {
+  background: #e9d8fd;
+  color: #6b46c1;
+}
+
+.badge {
+  font-size: 1.1rem;
+}
+
+.menuBtn {
+  background: none;
+  border: none;
+  padding: 0.5rem;
+  cursor: pointer;
+  border-radius: 8px;
+  transition: background 0.2s;
+  color: #718096;
+}
+
+.menuBtn:hover {
+  background: #f7fafc;
+}
+
+/* Card Body */
+.cardBody {
+  margin-bottom: 1.25rem;
+}
+
+.patientInfo {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+  padding-bottom: 1.5rem;
+  border-bottom: 1px solid #f7fafc;
+}
+
+.patientAvatar {
+  width: 50px;
+  height: 50px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 1.1rem;
+  text-transform: uppercase;
+}
+
+.patientDetails h3 {
+  margin: 0;
+  font-size: 1.1rem;
+  color: #2d3748;
+  font-weight: 600;
+}
+
+.patientDetails p {
+  margin: 0.25rem 0 0 0;
+  color: #718096;
+  font-size: 0.875rem;
+}
+
+.details {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.detailRow {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.label {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #4a5568;
+}
+
+.value {
+  color: #2d3748;
+  font-size: 0.95rem;
+}
+
+.analysesList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.analysisTag {
+  background: #edf2f7;
+  color: #4a5568;
+  padding: 0.375rem 0.75rem;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.notes {
+  color: #718096;
+  font-size: 0.9rem;
+  font-style: italic;
+  line-height: 1.5;
+}
+
+.factureLink {
+  color: #667eea;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+/* Card Footer */
+.cardFooter {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  padding-top: 1rem;
+  border-top: 1px solid #f7fafc;
+}
+
+.btn {
+  flex: 1;
+  min-width: 120px;
+  padding: 0.75rem 1rem;
+  border: none;
+  border-radius: 10px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  transition: all 0.3s ease;
+}
+
+.btnConfirm {
+  background: linear-gradient(135deg, #48bb78 0%, #38a169 100%);
+  color: white;
+}
+
+.btnConfirm:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(72, 187, 120, 0.3);
+}
+
+.btnCancel {
+  background: linear-gradient(135deg, #fc8181 0%, #f56565 100%);
+  color: white;
+}
+
+.btnCancel:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(252, 129, 129, 0.3);
+}
+
+.btnDelete {
+  background: linear-gradient(135deg, #e53e3e 0%, #c53030 100%);
+  color: white;
+}
+
+.btnDelete:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(229, 62, 62, 0.3);
+}
+
+/* Action Menu */
+.actionMenu {
+  position: absolute;
+  top: 3.5rem;
+  right: 1rem;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+  z-index: 10;
+  overflow: hidden;
+  min-width: 150px;
+}
+
+.actionMenu button {
+  width: 100%;
+  padding: 0.875rem 1.25rem;
+  border: none;
+  background: white;
+  text-align: left;
+  cursor: pointer;
+  font-size: 0.95rem;
+  color: #2d3748;
+  transition: background 0.2s;
+}
+
+.actionMenu button:hover {
+  background: #f7fafc;
+}
+
+.actionMenu button:not(:last-child) {
+  border-bottom: 1px solid #f7fafc;
+}
+
+/* Responsive */
+@media (max-width: 1200px) {
+  .cardsGrid {
+    grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+  }
+}
+
+@media (max-width: 768px) {
+  .appointmentsPage {
+    padding: 1rem;
+  }
+
+  .header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+
+  .titleSection {
+    width: 100%;
+  }
+
+  .btnPrimary {
+    width: 100%;
+  }
+
+  .controls {
+    flex-direction: column;
+  }
+
+  .searchBox,
+  .filterSelect {
+    width: 100%;
+  }
+
+  .cardsGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .cardFooter {
+    flex-direction: column;
+  }
+
+  .btn {
+    width: 100%;
+  }
+}
+
+@media (max-width: 480px) {
+  .title {
+    font-size: 1.5rem;
+  }
+
+  .titleIcon {
+    width: 50px;
+    height: 50px;
+    font-size: 1.5rem;
+  }
+
+  .card {
+    padding: 1rem;
+  }
+}

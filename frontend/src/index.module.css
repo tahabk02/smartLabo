@@ -1,0 +1,263 @@
+/* ===========================================
+   RESET & ROOT VARIABLES
+=========================================== */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+:root {
+  --primary: #3498db;
+  --secondary: #2ecc71;
+  --danger: #e74c3c;
+  --warning: #f39c12;
+  --dark: #2c3e50;
+  --light: #ecf0f1;
+  --gray: #95a5a6;
+}
+
+/* ===========================================
+   BODY & APP CONTAINER
+=========================================== */
+body {
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+  background: var(--light);
+  color: #333;
+}
+
+.app-container {
+  display: flex;
+  min-height: 100vh;
+  width: 100%;
+}
+
+/* ===========================================
+   SIDEBAR
+=========================================== */
+.sidebar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 250px;
+  height: 100vh;
+  background: var(--dark);
+  color: white;
+  display: flex;
+  flex-direction: column;
+  z-index: 100;
+  padding: 2rem 1rem;
+}
+
+.sidebar a {
+  color: white;
+  text-decoration: none;
+  display: block;
+  padding: 0.75rem 1rem;
+  border-radius: 5px;
+  transition: all 0.3s;
+}
+
+.sidebar a:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+/* ===========================================
+   MAIN CONTENT
+=========================================== */
+.main-content {
+  flex: 1;
+  padding: 2rem;
+  margin-left: 250px; /* sidebar width */
+  width: calc(100% - 250px);
+  transition: all 0.3s ease;
+}
+
+.main-content.full-width {
+  margin-left: 0;
+  width: 100%;
+}
+
+/* ===========================================
+   CARDS
+=========================================== */
+.card {
+  background: white;
+  border-radius: 10px;
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+  transition: all 0.3s ease;
+}
+
+.card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+/* ===========================================
+   BUTTONS
+=========================================== */
+.btn {
+  padding: 0.75rem 1.5rem;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: all 0.3s;
+}
+
+.btn-primary {
+  background: var(--primary);
+  color: white;
+}
+.btn-primary:hover {
+  background: #2980b9;
+}
+.btn-secondary {
+  background: var(--secondary);
+  color: white;
+}
+.btn-danger {
+  background: var(--danger);
+  color: white;
+}
+.btn-sm {
+  padding: 0.5rem 1rem;
+  font-size: 12px;
+}
+
+/* ===========================================
+   TABLES
+=========================================== */
+.table-container {
+  overflow-x: auto; /* important bach table ma ytkharba9ch */
+  width: 100%;
+}
+
+.table {
+  width: 100%;
+  min-width: 600px; /* min width bach ma ytkharba9ch */
+  border-collapse: collapse;
+  background: white;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.table th,
+.table td {
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid #eee;
+  text-align: left;
+}
+
+.table th {
+  background: var(--dark);
+  color: white;
+  font-weight: 600;
+}
+
+.table tr:hover {
+  background: #f8f9fa;
+}
+
+/* ===========================================
+   FORMS
+=========================================== */
+.form-group {
+  margin-bottom: 1.5rem;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-weight: 600;
+  color: var(--dark);
+}
+
+.form-control {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid #ddd;
+  border-radius: 5px;
+  font-size: 14px;
+}
+
+.form-control:focus {
+  outline: none;
+  border-color: var(--primary);
+}
+
+/* ===========================================
+   MODAL
+=========================================== */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modal {
+  background: white;
+  border-radius: 10px;
+  padding: 2rem;
+  max-width: 600px;
+  width: 90%;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+.modal-close {
+  background: none;
+  border: none;
+  font-size: 24px;
+  cursor: pointer;
+  color: var(--gray);
+}
+
+/* ===========================================
+   RESPONSIVE
+=========================================== */
+@media (max-width: 1200px) {
+  .main-content {
+    margin-left: 0;
+    width: 100%;
+  }
+  .table {
+    min-width: 500px;
+  }
+}
+
+@media (max-width: 768px) {
+  .btn {
+    padding: 0.5rem 1rem;
+    font-size: 12px;
+  }
+  .table {
+    min-width: 400px;
+  }
+}
+
+@media (max-width: 480px) {
+  .table th,
+  .table td {
+    padding: 0.5rem;
+    font-size: 12px;
+  }
+  .table {
+    min-width: 300px;
+  }
+}

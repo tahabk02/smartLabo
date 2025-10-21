@@ -1,0 +1,320 @@
+/* ProfileView.module.css */
+
+.container {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.pageTitle {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #1f2937;
+}
+
+.editButton {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  background: #3b82f6;
+  color: white;
+  border: none;
+  border-radius: 0.5rem;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.editButton:hover {
+  background: #2563eb;
+}
+
+/* Profile Header */
+.profileHeader {
+  background: linear-gradient(to right, #3b82f6, #2563eb);
+  border-radius: 0.5rem;
+  box-shadow: 0 10px 15px rgba(0, 0, 0, 0.1);
+  padding: 2rem;
+  color: white;
+}
+
+.profileContent {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+}
+
+.avatar {
+  width: 6rem;
+  height: 6rem;
+  background: white;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.avatarIcon {
+  width: 3rem;
+  height: 3rem;
+  color: #3b82f6;
+}
+
+.profileInfo h3 {
+  font-size: 1.875rem;
+  font-weight: 700;
+}
+
+.profileSubtext {
+  color: #bfdbfe;
+  margin-top: 0.25rem;
+}
+
+/* Edit Form */
+.editForm {
+  background: white;
+  border-radius: 0.5rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  padding: 1.5rem;
+}
+
+.formGrid {
+  display: grid;
+  grid-template-columns: repeat(1, 1fr);
+  gap: 1.5rem;
+}
+
+@media (min-width: 768px) {
+  .formGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.formField {
+  display: flex;
+  flex-direction: column;
+}
+
+.formField.fullWidth {
+  grid-column: span 2;
+}
+
+.label {
+  display: block;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #374151;
+  margin-bottom: 0.5rem;
+}
+
+.input {
+  width: 100%;
+  padding: 0.5rem 1rem;
+  border: 1px solid #d1d5db;
+  border-radius: 0.5rem;
+  transition: all 0.2s;
+}
+
+.input:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px #3b82f6;
+  border-color: #3b82f6;
+}
+
+.emergencySection {
+  grid-column: span 2;
+  border-top: 1px solid #e5e7eb;
+  padding-top: 1rem;
+}
+
+.emergencyTitle {
+  font-weight: 600;
+  color: #1f2937;
+  margin-bottom: 1rem;
+}
+
+.formActions {
+  display: flex;
+  gap: 0.75rem;
+  margin-top: 1.5rem;
+  padding-top: 1rem;
+  border-top: 1px solid #e5e7eb;
+}
+
+.cancelButton {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  border: 1px solid #d1d5db;
+  color: #374151;
+  background: white;
+  border-radius: 0.5rem;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.cancelButton:hover {
+  background: #f9fafb;
+}
+
+.saveButton {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  background: #3b82f6;
+  color: white;
+  border: none;
+  border-radius: 0.5rem;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.saveButton:hover {
+  background: #2563eb;
+}
+
+/* Profile Display */
+.infoSection {
+  background: white;
+  border-radius: 0.5rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  padding: 1.5rem;
+}
+
+.sectionTitle {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: #1f2937;
+  margin-bottom: 1rem;
+}
+
+.infoGrid {
+  display: grid;
+  grid-template-columns: repeat(1, 1fr);
+  gap: 1.5rem;
+}
+
+@media (min-width: 768px) {
+  .infoGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.infoGrid.threeColumns {
+  grid-template-columns: repeat(1, 1fr);
+}
+
+@media (min-width: 768px) {
+  .infoGrid.threeColumns {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+.infoItem {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+}
+
+.infoItem.fullWidth {
+  grid-column: span 2;
+}
+
+.infoIcon {
+  margin-top: 0.25rem;
+  flex-shrink: 0;
+}
+
+.infoContent {
+  flex: 1;
+}
+
+.infoLabel {
+  font-size: 0.875rem;
+  color: #4b5563;
+}
+
+.infoValue {
+  font-size: 1rem;
+  font-weight: 500;
+  color: #1f2937;
+  margin-top: 0.25rem;
+}
+
+/* Loading & Error States */
+.loadingContainer {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 16rem;
+}
+
+.spinner {
+  width: 3rem;
+  height: 3rem;
+  border: 2px solid #e5e7eb;
+  border-top-color: #3b82f6;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.errorMessage {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 0.5rem;
+  padding: 1rem;
+  color: #991b1b;
+}
+
+/* Responsive Adjustments */
+@media (max-width: 768px) {
+  .profileContent {
+    flex-direction: column;
+    text-align: center;
+  }
+
+  .profileInfo h3 {
+    font-size: 1.5rem;
+  }
+
+  .avatar {
+    width: 5rem;
+    height: 5rem;
+  }
+
+  .avatarIcon {
+    width: 2.5rem;
+    height: 2.5rem;
+  }
+
+  .formField.fullWidth {
+    grid-column: span 1;
+  }
+
+  .emergencySection {
+    grid-column: span 1;
+  }
+
+  .infoItem.fullWidth {
+    grid-column: span 1;
+  }
+}

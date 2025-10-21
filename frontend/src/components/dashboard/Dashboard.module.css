@@ -1,0 +1,666 @@
+Stats Grid .stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.stat-card {
+  background: white;
+  border-radius: 1rem;
+  padding: 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.stat-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+}
+
+.stat-icon {
+  width: 60px;
+  height: 60px;
+  border-radius: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.75rem;
+  flex-shrink: 0;
+}
+
+.stat-primary .stat-icon {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+}
+
+.stat-success .stat-icon {
+  background: linear-gradient(135deg, #48bb78 0%, #38a169 100%);
+  color: white;
+}
+
+.stat-warning .stat-icon {
+  background: linear-gradient(135deg, #f6ad55 0%, #ed8936 100%);
+  color: white;
+}
+
+.stat-danger .stat-icon {
+  background: linear-gradient(135deg, #f56565 0%, #e53e3e 100%);
+  color: white;
+}
+
+.stat-content {
+  flex: 1;
+}
+
+.stat-value {
+  font-size: 2rem;
+  font-weight: 700;
+  color: #1a202c;
+  margin: 0;
+}
+
+.stat-title {
+  font-size: 0.875rem;
+  color: #718096;
+  margin: 0.25rem 0;
+}
+
+.stat-trend {
+  font-size: 0.75rem;
+  color: #48bb78;
+  font-weight: 600;
+}
+
+/* Activities List */
+.activities-list {
+  padding: 1rem;
+}
+
+.activity-item {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem;
+  border-bottom: 1px solid #f0f0f0;
+  transition: background 0.2s ease;
+}
+
+.activity-item:hover {
+  background: #f7fafc;
+  border-radius: 0.5rem;
+}
+
+.activity-item:last-child {
+  border-bottom: none;
+}
+
+.activity-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 0.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.activity-appointment {
+  background: #e3f2fd;
+  color: #1565c0;
+}
+
+.activity-test {
+  background: #fff3e0;
+  color: #e65100;
+}
+
+.activity-patient {
+  background: #f3e5f5;
+  color: #6a1b9a;
+}
+
+.activity-content {
+  flex: 1;
+}
+
+.activity-message {
+  font-weight: 600;
+  color: #2d3748;
+  margin: 0 0 0.25rem 0;
+}
+
+.activity-patient {
+  font-size: 0.875rem;
+  color: #718096;
+}
+
+.activity-time {
+  font-size: 0.75rem;
+  color: #a0aec0;
+}
+
+/* Chart */
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.5rem;
+  border-bottom: 2px solid #e2e8f0;
+}
+
+.card-header h2 {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #1a202c;
+}
+
+.chart-filters {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.chart-filters button {
+  padding: 0.5rem 1rem;
+  border: 2px solid #e2e8f0;
+  background: white;
+  border-radius: 0.5rem;
+  cursor: pointer;
+  font-weight: 600;
+  transition: all 0.2s ease;
+}
+
+.chart-filters button.active {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border-color: transparent;
+}
+
+.chart-container {
+  padding: 2rem;
+}
+
+.chart-legend {
+  display: flex;
+  gap: 2rem;
+  margin-bottom: 2rem;
+  justify-content: center;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+  color: #4a5568;
+}
+
+.legend-color {
+  width: 16px;
+  height: 16px;
+  border-radius: 4px;
+}
+
+.chart {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-around;
+  height: 300px;
+  gap: 1rem;
+}
+
+.chart-bar-group {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex: 1;
+  gap: 0.5rem;
+}
+
+.chart-bars {
+  display: flex;
+  align-items: flex-end;
+  gap: 4px;
+  height: 100%;
+  width: 100%;
+  justify-content: center;
+}
+
+.chart-bar {
+  width: 20px;
+  border-radius: 4px 4px 0 0;
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+
+.chart-bar:hover {
+  opacity: 0.8;
+  transform: scaleY(1.05);
+}
+
+.bar-patients {
+  background: linear-gradient(180deg, #667eea 0%, #764ba2 100%);
+}
+
+.bar-appointments {
+  background: linear-gradient(180deg, #48bb78 0%, #38a169 100%);
+}
+
+.bar-tests {
+  background: linear-gradient(180deg, #f6ad55 0%, #ed8936 100%);
+}
+
+.chart-label {
+  font-size: 0.75rem;
+  color: #718096;
+  font-weight: 600;
+}
+
+/* Recent Patients */
+.patients-list {
+  padding: 1rem;
+}
+
+.patient-item {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem;
+  border-bottom: 1px solid #f0f0f0;
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.patient-item:hover {
+  background: #f7fafc;
+  border-radius: 0.5rem;
+}
+
+.patient-item:last-child {
+  border-bottom: none;
+}
+
+.patient-avatar {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 1.25rem;
+  flex-shrink: 0;
+  box-shadow: 0 4px 10px rgba(102, 126, 234, 0.3);
+}
+
+.patient-info {
+  flex: 1;
+}
+
+.patient-name {
+  margin: 0 0 0.5rem 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #2d3748;
+}
+
+.patient-contact {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.contact-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.813rem;
+  color: #718096;
+}
+
+.patient-meta {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.5rem;
+}
+
+.status-badge {
+  padding: 0.25rem 0.75rem;
+  border-radius: 1rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: capitalize;
+}
+
+.status-active {
+  background: #c6f6d5;
+  color: #22543d;
+}
+
+.status-pending {
+  background: #fed7d7;
+  color: #742a2a;
+}
+
+.last-visit {
+  font-size: 0.75rem;
+  color: #a0aec0;
+}
+
+.view-all-link {
+  color: #667eea;
+  text-decoration: none;
+  font-size: 0.875rem;
+  font-weight: 600;
+  transition: color 0.2s ease;
+}
+
+.view-all-link:hover {
+  color: #764ba2;
+}
+
+/* Pending Invoices */
+.total-pending {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #667eea;
+}
+
+.invoices-list {
+  padding: 1rem;
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.invoice-item {
+  padding: 1rem;
+  border-radius: 0.5rem;
+  margin-bottom: 1rem;
+  border: 2px solid #e2e8f0;
+  transition: all 0.2s ease;
+}
+
+.invoice-item:hover {
+  border-color: #667eea;
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.1);
+}
+
+.invoice-overdue {
+  border-color: #f56565;
+}
+
+.invoice-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.75rem;
+}
+
+.invoice-number {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 700;
+  color: #2d3748;
+  font-size: 0.875rem;
+}
+
+.invoice-status {
+  padding: 0.25rem 0.75rem;
+  border-radius: 1rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: capitalize;
+}
+
+.status-pending {
+  background: #feebc8;
+  color: #7c2d12;
+}
+
+.status-overdue {
+  background: #fed7d7;
+  color: #742a2a;
+}
+
+.invoice-details {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.invoice-patient {
+  margin: 0;
+  color: #4a5568;
+  font-weight: 600;
+}
+
+.invoice-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.invoice-amount {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #667eea;
+}
+
+.invoice-due {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.813rem;
+  color: #718096;
+}
+
+.overdue-alert {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem;
+  background: #fff5f5;
+  border-radius: 0.375rem;
+  color: #c53030;
+  font-size: 0.813rem;
+  font-weight: 600;
+}
+
+.card-footer {
+  padding: 1rem 1.5rem;
+  border-top: 2px solid #e2e8f0;
+  text-align: center;
+}
+
+.btn-link {
+  background: none;
+  border: none;
+  color: #667eea;
+  font-weight: 600;
+  cursor: pointer;
+  transition: color 0.2s ease;
+}
+
+.btn-link:hover {
+  color: #764ba2;
+}
+
+/* Today's Tasks */
+.tasks-progress {
+  font-size: 0.875rem;
+  color: #718096;
+  font-weight: 600;
+}
+
+.tasks-list {
+  padding: 1rem;
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.task-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  padding: 1rem;
+  border-radius: 0.5rem;
+  margin-bottom: 0.75rem;
+  border: 2px solid #e2e8f0;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.task-item:hover {
+  background: #f7fafc;
+  border-color: #cbd5e0;
+}
+
+.task-completed {
+  opacity: 0.6;
+  background: #f7fafc;
+}
+
+.task-completed .task-title {
+  text-decoration: line-through;
+}
+
+.task-checkbox {
+  font-size: 1.5rem;
+  flex-shrink: 0;
+}
+
+.icon-checked {
+  color: #48bb78;
+}
+
+.icon-unchecked {
+  color: #cbd5e0;
+}
+
+.task-content {
+  flex: 1;
+}
+
+.task-title {
+  margin: 0 0 0.5rem 0;
+  font-size: 0.938rem;
+  font-weight: 600;
+  color: #2d3748;
+}
+
+.task-meta {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+}
+
+.task-time {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.813rem;
+  color: #718096;
+}
+
+.task-priority {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.25rem 0.75rem;
+  border-radius: 1rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: capitalize;
+}
+
+.priority-high {
+  background: #fed7d7;
+  color: #742a2a;
+}
+
+.priority-medium {
+  background: #feebc8;
+  color: #7c2d12;
+}
+
+.priority-low {
+  background: #c6f6d5;
+  color: #22543d;
+}
+
+.progress-bar-container {
+  height: 8px;
+  background: #e2e8f0;
+  border-radius: 4px;
+  overflow: hidden;
+  margin: 1rem 1.5rem;
+}
+
+.progress-bar {
+  height: 100%;
+  background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+  transition: width 0.3s ease;
+  border-radius: 4px;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .patient-contact {
+    display: none;
+  }
+
+  .invoice-meta {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+
+  .task-meta {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.25rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .stats-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .stat-card {
+    padding: 1.25rem;
+  }
+
+  .stat-icon {
+    width: 50px;
+    height: 50px;
+    font-size: 1.5rem;
+  }
+
+  .stat-value {
+    font-size: 1.75rem;
+  }
+
+  .chart-container {
+    padding: 1rem;
+  }
+
+  .chart {
+    height: 200px;
+  }
+
+  .chart-bar {
+    width: 12px;
+  }
+}

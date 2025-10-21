@@ -1,0 +1,161 @@
+.card {
+  background: white;
+  border: 1px solid #e0e0e0;
+  border-radius: 10px;
+  padding: 20px;
+  transition: all 0.3s;
+}
+
+.card:hover {
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+  transform: translateY(-2px);
+}
+
+.cardHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+  padding-bottom: 12px;
+  border-bottom: 2px solid #f5f5f5;
+}
+
+.dateBadge {
+  font-size: 13px;
+  color: #555;
+  font-weight: 500;
+}
+
+.statusBadge {
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.statusBadge.active {
+  background: #d4edda;
+  color: #155724;
+}
+
+.statusBadge.inactive {
+  background: #f8d7da;
+  color: #721c24;
+}
+
+.cardBody {
+  margin: 15px 0;
+}
+
+.diagnosis {
+  font-size: 18px;
+  color: #2c3e50;
+  margin: 0 0 20px 0;
+}
+
+.medicationsList {
+  margin: 20px 0;
+}
+
+.medicationsList h4 {
+  font-size: 16px;
+  color: #495057;
+  margin: 0 0 15px 0;
+}
+
+.medicationItem {
+  background: #f8f9fa;
+  border-left: 3px solid #667eea;
+  padding: 12px;
+  margin-bottom: 12px;
+  border-radius: 6px;
+}
+
+.medHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.medHeader strong {
+  font-size: 15px;
+  color: #2c3e50;
+}
+
+.dosage {
+  background: #667eea;
+  color: white;
+  padding: 2px 10px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.medDetails {
+  display: flex;
+  gap: 15px;
+  margin-top: 8px;
+  font-size: 13px;
+  color: #666;
+}
+
+.medDetails span {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.instructions {
+  margin-top: 8px;
+  padding: 8px;
+  background: #fff;
+  border-radius: 4px;
+  font-size: 13px;
+  color: #555;
+  font-style: italic;
+}
+
+.notesSection {
+  background: #fff3cd;
+  padding: 12px;
+  border-radius: 6px;
+  border-left: 3px solid #ffc107;
+  margin-top: 15px;
+}
+
+.notesSection strong {
+  display: block;
+  color: #856404;
+  font-size: 13px;
+  margin-bottom: 5px;
+}
+
+.notesSection p {
+  margin: 0;
+  color: #856404;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.cardFooter {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: 12px;
+  margin-top: 15px;
+  border-top: 1px solid #f0f0f0;
+  font-size: 12px;
+  color: #888;
+}
+
+.doctorInfo {
+  font-weight: 500;
+  color: #667eea;
+}
+
+.timestamp {
+  color: #999;
+}

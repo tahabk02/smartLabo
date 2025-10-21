@@ -1,0 +1,141 @@
+.card {
+  background: white;
+  border: 1px solid #e0e0e0;
+  border-radius: 10px;
+  padding: 20px;
+  transition: all 0.3s;
+}
+
+.card:hover {
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+  transform: translateY(-2px);
+}
+
+.cardHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 15px;
+  padding-bottom: 12px;
+  border-bottom: 2px solid #f5f5f5;
+}
+
+.typeInfo {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  flex: 1;
+}
+
+.icon {
+  font-size: 32px;
+}
+
+.typeInfo h3 {
+  margin: 0 0 4px 0;
+  font-size: 18px;
+  color: #2c3e50;
+}
+
+.date {
+  margin: 0;
+  font-size: 13px;
+  color: #666;
+}
+
+.actions {
+  display: flex;
+  gap: 8px;
+}
+
+.btnEdit,
+.btnDelete {
+  background: none;
+  border: none;
+  padding: 6px;
+  cursor: pointer;
+  border-radius: 4px;
+  transition: all 0.3s;
+  color: #666;
+  font-size: 16px;
+}
+
+.btnEdit:hover {
+  background: #e3f2fd;
+  color: #2196f3;
+}
+
+.btnDelete:hover {
+  background: #ffebee;
+  color: #f44336;
+}
+
+.cardBody {
+  margin: 15px 0;
+}
+
+.statusBadge {
+  display: inline-block;
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  color: white;
+  margin-bottom: 15px;
+}
+
+.section {
+  margin-bottom: 12px;
+}
+
+.section strong {
+  display: block;
+  color: #555;
+  font-size: 13px;
+  margin-bottom: 5px;
+}
+
+.section p {
+  margin: 0;
+  color: #666;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.results {
+  background: #f8f9fa;
+  padding: 10px;
+  border-radius: 6px;
+  border-left: 3px solid #667eea;
+}
+
+.priceTag {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 10px;
+  border-radius: 8px;
+  text-align: center;
+  font-weight: 600;
+  margin-top: 15px;
+  font-size: 15px;
+}
+
+.cardFooter {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: 12px;
+  margin-top: 15px;
+  border-top: 1px solid #f0f0f0;
+  font-size: 12px;
+  color: #888;
+}
+
+.doctorInfo {
+  font-weight: 500;
+  color: #667eea;
+}
+
+.timestamp {
+  color: #999;
+}
