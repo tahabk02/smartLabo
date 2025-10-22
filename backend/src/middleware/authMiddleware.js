@@ -1,34 +1,24 @@
-// backend/src/middleware/authMiddleware.js
 const jwt = require("jsonwebtoken");
 const User = require("../models/User");
 
-/**
- * Middleware pour vérifier le token JWT et authentifier l'utilisateur
- */
-const protect = async (req, res, next) => {
+// ========== PROTECTION GÉNÉRALE ==========
+// Compatible avec un modèle User unique
+
+exports.protect = async (req, res, next) => {
   try {
-    let token;
-
-    // Vérifier si le token existe dans le header Authorization
-    if (
-      req.headers.authorization &&
-      req.headers.authorization.startsWith("Bearer")
-    ) {
-      token = req.headers.authorization.split(" ")[1];
-    }
-
-    // Alternative : vérifier avec req.header()
-    if (!token && req.header("Authorization")) {
-      token = req.header("Authorization").replace("Bearer ", "");
-    }
+    let token = req.header("Authorization");
 
     if (!token) {
       return res.status(401).json({
-        message: "Token manquant, accès refusé.",
+        success: false,
+        message: "Accès refusé. Token manquant.",
       });
     }
 
-    // Vérifier et décoder le token
+    if (token.startsWith("Bearer ")) {
+      token = token.slice(7, token.length);
+    }
+
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
     // Récupérer l'utilisateur depuis la base de données
@@ -36,51 +26,68 @@ const protect = async (req, res, next) => {
 
     if (!user) {
       return res.status(401).json({
-        message: "Utilisateur introuvable.",
+        success: false,
+        message: "Utilisateur non trouvé",
       });
     }
 
     // Vérifier si le compte est actif
     if (user.isActive === false) {
       return res.status(403).json({
-        message: "Compte désactivé.",
+        success: false,
+        message: "Compte désactivé",
       });
     }
 
     // Attacher l'utilisateur à la requête
-    req.user = user;
+    req.user = {
+      id: user._id,
+      _id: user._id,
+      role: user.role,
+      email: user.email,
+    };
+
     next();
   } catch (error) {
-    console.error("Auth middleware error:", error.message);
+    console.error("Auth error:", error);
 
     if (error.name === "JsonWebTokenError") {
-      return res.status(401).json({ message: "Token invalide." });
+      return res.status(401).json({
+        success: false,
+        message: "Token invalide",
+      });
     }
 
     if (error.name === "TokenExpiredError") {
-      return res.status(401).json({ message: "Token expiré." });
+      return res.status(401).json({
+        success: false,
+        message: "Token expiré",
+      });
     }
 
-    res.status(401).json({ message: "Authentification échouée." });
+    res.status(500).json({
+      success: false,
+      message: "Erreur d'authentification",
+    });
   }
 };
 
-/**
- * Middleware pour vérifier le rôle de l'utilisateur
- * @param  {...string} roles - Les rôles autorisés (admin, receptionist, patient, etc.)
- * @example authorize("admin", "receptionist")
- */
-const authorize = (...roles) => {
+// ========== AUTORISATION PAR RÔLE ==========
+// Usage: authorize('admin') ou authorize('admin', 'doctor')
+
+exports.authorize = (...roles) => {
   return (req, res, next) => {
     if (!req.user) {
       return res.status(401).json({
-        message: "Utilisateur non authentifié.",
+        success: false,
+        message: "Non authentifié. Veuillez vous connecter.",
       });
     }
 
     if (!roles.includes(req.user.role)) {
       return res.status(403).json({
-        message: `Accès refusé. Rôle requis: ${roles.join(" ou ")}.`,
+        success: false,
+        message: `Accès refusé. Rôles autorisés: ${roles.join(", ")}`,
       });
     }
 
@@ -88,16 +95,42 @@ const authorize = (...roles) => {
   };
 };
 
-/**
- * Middleware alternatif pour vérifier le rôle (alias de authorize)
- * Utilisé pour la compatibilité avec l'ancien code
- */
-const roleCheck = (...roles) => {
-  return authorize(...roles);
+// ========== AUTHENTICATION OPTIONNELLE ==========
+// Pour les routes qui fonctionnent avec ou sans auth
+
+exports.optionalAuth = async (req, res, next) => {
+  try {
+    let token = req.header("Authorization");
+
+    if (!token) {
+      return next();
+    }
+
+    if (token.startsWith("Bearer ")) {
+      token = token.slice(7, token.length);
+    }
+
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const user = await User.findById(decoded.id).select("-password");
+
+    if (user) {
+      req.user = {
+        id: user._id,
+        _id: user._id,
+        role: user.role,
+        email: user.email,
+      };
+    }
+
+    next();
+  } catch (error) {
+    next();
+  }
 };
 
-module.exports = {
-  protect,
-  authorize,
-  roleCheck, // Export pour compatibilité
-};
+// ========== ALIASES POUR COMPATIBILITÉ ==========
+
+exports.authenticate = exports.protect;
+exports.authenticatePatient = exports.protect;
+exports.authenticateDoctor = exports.protect;
+exports.authenticateAdmin = exports.protect;

@@ -47,22 +47,144 @@ app.use("/api/chatbot", require("./routes/chatbotRoutes"));
 app.use("/api/ai-agent", require("./routes/aiAgentRoutes"));
 
 // ==========================================
-// 🆕 NOUVELLES ROUTES - DOSSIER MÉDICAL
+// DOSSIER MÉDICAL
 // ==========================================
-
-// Medical Records (Dossier médical central)
 app.use("/api/medical-records", require("./routes/medicalRecords"));
-
-// Patient Analyses (Résultats d'analyses patients)
 app.use("/api/patient-analyses", require("./routes/patientAnalyses"));
-
-// Prescriptions (Ordonnances)
 app.use("/api/prescriptions", require("./routes/prescriptions"));
 
 // ==========================================
-// 🆕 ROUTES PATIENT (Espace Patient)
+// 🆕 PATIENT PORTAL ROUTES
 // ==========================================
 app.use("/api/patient", require("./routes/patientAppointments"));
+
+// ✨ NEW: NFC Management
+app.use("/api/patient/nfc", require("./routes/patient/nfc"));
+
+// ==========================================
+// 🆕 PUBLIC NFC ROUTES (No Auth Required)
+// ==========================================
+const Patient = require("./models/Patient");
+const NFCScan = require("./models/NFCScan");
+
+// Verify NFC Card (Public)
+app.get("/api/nfc/verify/:token", async (req, res) => {
+  try {
+    const { token } = req.params;
+
+    console.log("🔍 NFC Verification:", token.slice(0, 8) + "...");
+
+    const patient = await Patient.findByNFCToken(token);
+
+    if (!patient) {
+      console.log("❌ Invalid or expired token");
+      return res.status(404).json({
+        success: false,
+        message: "Carte non reconnue ou expirée",
+      });
+    }
+
+    if (patient.nfc.status !== "active") {
+      console.log("❌ Card status:", patient.nfc.status);
+      return res.status(403).json({
+        success: false,
+        message: `Carte ${patient.nfc.status}`,
+      });
+    }
+
+    // Log scan
+    const scan = new NFCScan({
+      patient: patient._id,
+      cardNumber: patient.nfc.cardNumber,
+      scanType: "web",
+      deviceInfo: {
+        userAgent: req.headers["user-agent"],
+        ipAddress: req.ip || req.connection.remoteAddress,
+      },
+      successful: true,
+    });
+    await scan.save();
+
+    // Update last scanned
+    patient.nfc.lastScanned = {
+      date: new Date(),
+      location: "Web Scanner",
+      scannedBy: "Anonymous",
+    };
+    await patient.save();
+
+    const publicInfo = patient.getPublicInfo();
+
+    console.log("✅ Verification successful:", patient.numeroPatient);
+
+    res.json({
+      success: true,
+      data: publicInfo,
+    });
+  } catch (error) {
+    console.error("❌ NFC Verify error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Erreur lors de la vérification",
+    });
+  }
+});
+
+// Log NFC Scan (Public)
+app.post("/api/nfc/scan/:token", async (req, res) => {
+  try {
+    const { token } = req.params;
+    const { scannedBy, location, purpose, isEmergency } = req.body;
+
+    const patient = await Patient.findByNFCToken(token);
+
+    if (!patient) {
+      return res.status(404).json({
+        success: false,
+        message: "Carte non reconnue",
+      });
+    }
+
+    const scan = new NFCScan({
+      patient: patient._id,
+      cardNumber: patient.nfc.cardNumber,
+      scanType: req.body.scanType || "web",
+      scannedBy,
+      location,
+      purpose,
+      deviceInfo: {
+        userAgent: req.headers["user-agent"],
+        ipAddress: req.ip || req.connection.remoteAddress,
+      },
+      isEmergency: isEmergency || false,
+      successful: true,
+    });
+
+    await scan.save();
+
+    if (location?.address) {
+      patient.nfc.lastScanned = {
+        date: new Date(),
+        location: location.address,
+        scannedBy: scannedBy?.name || "Unknown",
+      };
+      await patient.save();
+    }
+
+    console.log("📝 Scan logged:", patient.numeroPatient);
+
+    res.json({
+      success: true,
+      message: "Scan enregistré",
+    });
+  } catch (error) {
+    console.error("❌ Scan log error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Erreur lors de l'enregistrement",
+    });
+  }
+});
 
 // ==========================================
 // STATIC FILES
@@ -75,7 +197,7 @@ app.use("/uploads", express.static("uploads"));
 app.get("/api/health", (req, res) => {
   res.json({
     status: "OK",
-    message: "SmartLab Server is running",
+    message: "SmartLabo Server is running",
     timestamp: new Date().toISOString(),
     uptime: process.uptime(),
   });
@@ -87,7 +209,7 @@ app.get("/api/health", (req, res) => {
 app.get("/", (req, res) => {
   res.json({
     message: "🏥 SmartLabo API is running",
-    version: "2.0.0",
+    version: "2.2.0",
     status: "active",
     environment: process.env.NODE_ENV || "development",
     endpoints: {
@@ -103,12 +225,25 @@ app.get("/", (req, res) => {
       appointments: "/api/appointments",
       chatbot: "/api/chatbot",
       aiAgent: "/api/ai-agent",
-      // 🆕 Nouvelles routes
       medicalRecords: "/api/medical-records",
       patientAnalyses: "/api/patient-analyses",
       prescriptions: "/api/prescriptions",
-      // 🆕 Espace patient
-      patient: "/api/patient",
+
+      // 🆕 Patient Portal
+      patientPortal: {
+        appointments: "/api/patient/appointments",
+        profile: "/api/patient/profile",
+        dashboard: "/api/patient/dashboard/stats",
+        analyses: "/api/patient/analyses",
+        invoices: "/api/patient/invoices",
+        nfc: "/api/patient/nfc",
+      },
+
+      // 🆕 Public NFC
+      nfc: {
+        verify: "/api/nfc/verify/:token",
+        scan: "/api/nfc/scan/:token",
+      },
     },
     health: "/api/health",
   });
@@ -119,6 +254,7 @@ app.get("/", (req, res) => {
 // ==========================================
 app.use((req, res) => {
   res.status(404).json({
+    success: false,
     message: "❌ Route not found",
     requestedUrl: req.originalUrl,
     method: req.method,
@@ -131,6 +267,7 @@ app.use((req, res) => {
 app.use((err, req, res, next) => {
   console.error("❌ Error:", err.stack);
   res.status(err.status || 500).json({
+    success: false,
     message: err.message || "Something went wrong!",
     error: process.env.NODE_ENV === "development" ? err.stack : undefined,
   });
@@ -142,12 +279,23 @@ app.use((err, req, res, next) => {
 const PORT = process.env.PORT || 5000;
 
 const server = app.listen(PORT, () => {
-  console.log("=".repeat(50));
-  console.log(`✅ Server running on port ${PORT}`);
+  console.log("=".repeat(60));
+  console.log(`✅ SmartLabo Server running on port ${PORT}`);
   console.log(`📍 Environment: ${process.env.NODE_ENV || "development"}`);
   console.log(`🌐 API URL: http://localhost:${PORT}`);
-  console.log(`💚 Health Check: http://localhost:${PORT}/api/health`);
-  console.log("=".repeat(50));
+  console.log(`💚 Health: http://localhost:${PORT}/api/health`);
+  console.log("=".repeat(60));
+  console.log("📋 New Routes:");
+  console.log("   💳 NFC System:");
+  console.log("      GET    /api/patient/nfc (Get card)");
+  console.log("      POST   /api/patient/nfc/generate (Generate)");
+  console.log("      GET    /api/patient/nfc/scan-history");
+  console.log("      POST   /api/patient/nfc/report-lost");
+  console.log("   ");
+  console.log("   🌐 Public NFC:");
+  console.log("      GET    /api/nfc/verify/:token (Public)");
+  console.log("      POST   /api/nfc/scan/:token (Public)");
+  console.log("=".repeat(60));
 });
 
 // ==========================================

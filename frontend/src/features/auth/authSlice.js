@@ -8,10 +8,27 @@ export const login = createAsyncThunk(
   "auth/login",
   async (credentials, { rejectWithValue }) => {
     try {
+      console.log("🔐 Attempting login with:", credentials.email);
       const response = await api.post("/auth/login", credentials);
+
+      console.log("✅ Login response:", response.data);
+
+      // Vérifier que le token existe
+      if (!response.data.token) {
+        console.error("❌ No token in response:", response.data);
+        return rejectWithValue("Token manquant dans la réponse");
+      }
+
+      // Sauvegarder le token
       localStorage.setItem("token", response.data.token);
-      return response.data; // { user: {...}, token: "..." }
+      console.log(
+        "💾 Token saved to localStorage:",
+        localStorage.getItem("token")
+      );
+
+      return response.data; // { success: true, user: {...}, token: "..." }
     } catch (error) {
+      console.error("❌ Login error:", error.response?.data || error.message);
       return rejectWithValue(error.response?.data?.message || "Login failed");
     }
   }
@@ -22,10 +39,28 @@ export const register = createAsyncThunk(
   "auth/register",
   async (userData, { rejectWithValue }) => {
     try {
+      console.log("📝 Attempting registration:", userData.email);
       const response = await api.post("/auth/register", userData);
+
+      console.log("✅ Registration response:", response.data);
+
+      if (!response.data.token) {
+        console.error("❌ No token in response:", response.data);
+        return rejectWithValue("Token manquant dans la réponse");
+      }
+
       localStorage.setItem("token", response.data.token);
+      console.log(
+        "💾 Token saved to localStorage:",
+        localStorage.getItem("token")
+      );
+
       return response.data;
     } catch (error) {
+      console.error(
+        "❌ Registration error:",
+        error.response?.data || error.message
+      );
       return rejectWithValue(
         error.response?.data?.message || "Registration failed"
       );
@@ -39,11 +74,19 @@ export const loadUser = createAsyncThunk(
   async (_, { rejectWithValue }) => {
     try {
       const token = localStorage.getItem("token");
+      console.log("🔍 Loading user with token:", token ? "exists" : "null");
+
       if (!token) return rejectWithValue("No token found");
 
       const response = await api.get("/auth/me");
+      console.log("✅ User loaded:", response.data);
+
       return response.data.user; // direct user object
     } catch (error) {
+      console.error(
+        "❌ Load user error:",
+        error.response?.data || error.message
+      );
       localStorage.removeItem("token");
       return rejectWithValue(
         error.response?.data?.message || "Failed to load user"
@@ -58,8 +101,10 @@ export const updateUser = createAsyncThunk(
   async (userData, { rejectWithValue }) => {
     try {
       const response = await api.put("/auth/me", userData);
+      console.log("✅ User updated:", response.data);
       return response.data.user;
     } catch (error) {
+      console.error("❌ Update error:", error.response?.data || error.message);
       return rejectWithValue(error.response?.data?.message || "Update failed");
     }
   }
@@ -72,12 +117,13 @@ const authSlice = createSlice({
   initialState: {
     user: null,
     token: localStorage.getItem("token"),
-    isAuthenticated: false,
+    isAuthenticated: !!localStorage.getItem("token"), // true si token existe
     loading: false,
     error: null,
   },
   reducers: {
     logout: (state) => {
+      console.log("🚪 Logging out...");
       localStorage.removeItem("token");
       state.user = null;
       state.token = null;
@@ -86,6 +132,17 @@ const authSlice = createSlice({
     },
     clearError: (state) => {
       state.error = null;
+    },
+    // Nouvelle action pour vérifier le token au chargement de l'app
+    checkAuth: (state) => {
+      const token = localStorage.getItem("token");
+      console.log("🔍 Checking auth, token:", token ? "exists" : "null");
+      if (token) {
+        state.token = token;
+        state.isAuthenticated = true;
+      } else {
+        state.isAuthenticated = false;
+      }
     },
   },
   extraReducers: (builder) => {
@@ -96,6 +153,7 @@ const authSlice = createSlice({
         state.error = null;
       })
       .addCase(login.fulfilled, (state, action) => {
+        console.log("✅ Login fulfilled:", action.payload);
         state.loading = false;
         state.isAuthenticated = true;
         state.user = action.payload.user;
@@ -103,6 +161,7 @@ const authSlice = createSlice({
         state.error = null;
       })
       .addCase(login.rejected, (state, action) => {
+        console.log("❌ Login rejected:", action.payload);
         state.loading = false;
         state.isAuthenticated = false;
         state.user = null;
@@ -116,6 +175,7 @@ const authSlice = createSlice({
         state.error = null;
       })
       .addCase(register.fulfilled, (state, action) => {
+        console.log("✅ Register fulfilled:", action.payload);
         state.loading = false;
         state.isAuthenticated = true;
         state.user = action.payload.user;
@@ -123,6 +183,7 @@ const authSlice = createSlice({
         state.error = null;
       })
       .addCase(register.rejected, (state, action) => {
+        console.log("❌ Register rejected:", action.payload);
         state.loading = false;
         state.isAuthenticated = false;
         state.user = null;
@@ -135,12 +196,14 @@ const authSlice = createSlice({
         state.loading = true;
       })
       .addCase(loadUser.fulfilled, (state, action) => {
+        console.log("✅ User loaded:", action.payload);
         state.loading = false;
         state.isAuthenticated = true;
         state.user = action.payload;
         state.error = null;
       })
       .addCase(loadUser.rejected, (state, action) => {
+        console.log("❌ Load user rejected:", action.payload);
         state.loading = false;
         state.isAuthenticated = false;
         state.user = null;
@@ -165,5 +228,5 @@ const authSlice = createSlice({
   },
 });
 
-export const { logout, clearError } = authSlice.actions;
+export const { logout, clearError, checkAuth } = authSlice.actions;
 export default authSlice.reducer;

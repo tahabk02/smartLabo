@@ -19,14 +19,24 @@ apiClient.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
-// Response Interceptor
+// ✅ Response Interceptor amélioré
 apiClient.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response?.status === 401) {
-      localStorage.removeItem("token");
-      localStorage.removeItem("user");
-      window.location.href = "/login";
+    if (error.response) {
+      const { status } = error.response;
+
+      // ✅ فقط إذا السيرفر فعلاً جاوب بـ 401 و المستخدم مسجل
+      if (status === 401 && localStorage.getItem("token")) {
+        console.warn("⚠️ Session expirée. Veuillez vous reconnecter.");
+
+        // ممكن تضيف toast بدل redirect مباشر
+        setTimeout(() => {
+          localStorage.removeItem("token");
+          localStorage.removeItem("user");
+          window.location.href = "/login";
+        }, 1000); // يمهلو ثانية قبل ما يحيد token
+      }
     }
     return Promise.reject(error);
   }

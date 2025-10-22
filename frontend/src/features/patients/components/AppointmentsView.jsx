@@ -3,7 +3,6 @@
 import React, { useState, useEffect } from "react";
 import { Eye, FileText } from "lucide-react";
 import patientApi from "../services/patientApi";
-import styles from "./AppointmentsView.module.css";
 
 const AppointmentsView = () => {
   const [analyses, setAnalyses] = useState([]);

@@ -1,3 +1,5 @@
+// backend/routes/auth.routes.js - Updated to support Patient Portal
+
 const express = require("express");
 const router = express.Router();
 const bcrypt = require("bcryptjs");
@@ -6,9 +8,7 @@ const User = require("../models/User");
 const Patient = require("../models/Patient");
 const { protect } = require("../middleware/authMiddleware");
 
-// @route   POST /api/auth/register
-// @desc    Register new user (et créer patient si role = patient)
-// @access  Public
+// ========== UNIVERSAL REGISTER (Auto-detect role) ==========
 router.post("/register", async (req, res) => {
   try {
     const {
@@ -16,257 +16,424 @@ router.post("/register", async (req, res) => {
       email,
       password,
       role,
-      // Champs supplémentaires pour patient
-      nom,
-      prenom,
-      telephone,
-      dateNaissance,
-      sexe,
-      adresse,
+      phone,
+      address,
+      firstName,
+      lastName,
+      birthDate,
+      gender,
+      cin,
     } = req.body;
 
-    // Définir le rôle par défaut si non fourni
-    const userRole = role || "patient";
-
-    console.log("📝 Registration attempt:", { email, role: userRole });
-
-    // Validation des champs obligatoires
     if (!email || !password) {
       return res.status(400).json({
-        message: "Email et mot de passe sont requis",
+        success: false,
+        message: "Email et mot de passe requis",
       });
     }
 
-    // Vérifier si l'utilisateur existe déjà
+    // Check if email exists in User or Patient
     const existingUser = await User.findOne({ email });
-    if (existingUser) {
+    const existingPatient = await Patient.findOne({ email });
+
+    if (existingUser || existingPatient) {
       return res.status(400).json({
+        success: false,
         message: "Cet email est déjà utilisé",
       });
     }
 
-    // Si c'est un patient, vérifier que les infos nécessaires sont fournies
-    if (userRole === "patient") {
-      if (!nom || !prenom) {
-        return res.status(400).json({
-          message: "Nom et prénom sont requis pour un patient",
-        });
-      }
-    }
-
-    // Hasher le mot de passe
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
 
-    // Créer l'utilisateur
-    const user = await User.create({
-      name: name || `${prenom} ${nom}`,
-      email,
-      password: hashedPassword,
-      role: userRole,
-    });
+    // ✨ Si role = patient OU si on a firstName/lastName → créer Patient
+    if (role === "patient" || (firstName && lastName)) {
+      const patient = new Patient({
+        firstName: firstName || name?.split(" ")[0] || "Patient",
+        lastName: lastName || name?.split(" ")[1] || "",
+        email,
+        password: hashedPassword,
+        phone,
+        address: address ? { street: address } : undefined,
+        birthDate,
+        gender,
+        cin,
+        isActive: true,
+      });
 
-    console.log("✅ User created:", user._id);
+      await patient.save();
 
-    // Si le rôle est "patient", créer aussi un document Patient
-    let patient = null;
-    if (userRole === "patient") {
-      try {
-        // Générer numéro de patient
-        const patientCount = await Patient.countDocuments();
-        const numeroPatient = `P${new Date().getFullYear()}${String(
-          patientCount + 1
-        ).padStart(5, "0")}`;
+      const token = jwt.sign(
+        { id: patient._id, role: "patient" },
+        process.env.JWT_SECRET,
+        { expiresIn: "30d" }
+      );
 
-        patient = await Patient.create({
-          nom: nom || "",
-          prenom: prenom || "",
-          name: `${prenom} ${nom}`,
-          email,
-          telephone: telephone || "",
-          dateNaissance: dateNaissance || null,
-          sexe: sexe || "Non spécifié",
-          adresse: adresse || "",
-          numeroPatient,
-          user: user._id, // Lien avec le compte utilisateur
-        });
-
-        console.log("✅ Patient profile created:", patient._id);
-
-        // Mettre à jour l'utilisateur avec la référence au patient
-        user.patientProfile = patient._id;
-        await user.save();
-      } catch (patientError) {
-        console.error("❌ Error creating patient profile:", patientError);
-        // Si la création du patient échoue, on continue quand même
-        // L'utilisateur peut créer son profil patient plus tard
-      }
+      return res.status(201).json({
+        success: true,
+        token,
+        user: {
+          id: patient._id,
+          numeroPatient: patient.numeroPatient,
+          firstName: patient.firstName,
+          lastName: patient.lastName,
+          email: patient.email,
+          role: "patient",
+          hasNFCCard: patient.nfc.status === "active",
+        },
+      });
     }
 
-    // Générer le token JWT
+    // Sinon créer User normal (admin, doctor, etc.)
+    const user = new User({
+      name: name || `${firstName} ${lastName}`,
+      email,
+      password: hashedPassword,
+      role: role || "patient",
+      phone,
+      address,
+      isActive: true,
+    });
+
+    await user.save();
+
     const token = jwt.sign(
-      {
-        id: user._id,
-        role: user.role,
-        email: user.email,
-      },
+      { id: user._id, role: user.role },
       process.env.JWT_SECRET,
       { expiresIn: "30d" }
     );
 
-    // Préparer la réponse
-    const response = {
+    const userResponse = user.toObject();
+    delete userResponse.password;
+
+    res.status(201).json({
       success: true,
-      message: "Inscription réussie",
       token,
-      user: {
-        id: user._id,
-        name: user.name,
-        email: user.email,
-        role: user.role,
-      },
-    };
-
-    // Ajouter les infos du patient si créé
-    if (patient) {
-      response.patient = {
-        id: patient._id,
-        numeroPatient: patient.numeroPatient,
-        nom: patient.nom,
-        prenom: patient.prenom,
-      };
-    }
-
-    res.status(201).json(response);
+      user: userResponse,
+    });
   } catch (error) {
-    console.error("❌ Registration error:", error);
+    console.error("❌ Erreur inscription:", error.message);
     res.status(500).json({
-      message: "Erreur lors de l'inscription",
-      error: error.message,
+      success: false,
+      message: "Erreur serveur: " + error.message,
     });
   }
 });
 
-// @route   POST /api/auth/login
-// @desc    Login user
-// @access  Public
+// ========== UNIVERSAL LOGIN (Check both User & Patient) ==========
 router.post("/login", async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    console.log("🔐 Login attempt:", email);
-
-    // Validation
     if (!email || !password) {
       return res.status(400).json({
-        message: "Email et mot de passe sont requis",
+        success: false,
+        message: "Email et mot de passe requis",
       });
     }
 
-    // Trouver l'utilisateur
+    // ✨ Try to find in Patient collection first
+    let patient = await Patient.findOne({ email }).select("+password");
+
+    if (patient) {
+      if (!patient.isActive) {
+        return res.status(403).json({
+          success: false,
+          message: "Votre compte est désactivé",
+        });
+      }
+
+      const isMatch = await patient.comparePassword(password);
+      if (!isMatch) {
+        return res.status(401).json({
+          success: false,
+          message: "Email ou mot de passe incorrect",
+        });
+      }
+
+      // Update last login
+      patient.lastLogin = new Date();
+      await patient.save();
+
+      const token = jwt.sign(
+        { id: patient._id, role: "patient" },
+        process.env.JWT_SECRET,
+        { expiresIn: "30d" }
+      );
+
+      console.log("✅ Patient login:", patient.email);
+
+      return res.json({
+        success: true,
+        token,
+        user: {
+          id: patient._id,
+          numeroPatient: patient.numeroPatient,
+          firstName: patient.firstName,
+          lastName: patient.lastName,
+          fullName: patient.fullName,
+          email: patient.email,
+          phone: patient.phone,
+          role: "patient",
+          hasNFCCard: patient.nfc.status === "active",
+          age: patient.age,
+        },
+      });
+    }
+
+    // If not found in Patient, try User collection
     const user = await User.findOne({ email }).select("+password");
+
     if (!user) {
       return res.status(401).json({
+        success: false,
         message: "Email ou mot de passe incorrect",
       });
     }
 
-    // Vérifier le mot de passe
+    if (!user.isActive) {
+      return res.status(403).json({
+        success: false,
+        message: "Votre compte est désactivé",
+      });
+    }
+
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
       return res.status(401).json({
+        success: false,
         message: "Email ou mot de passe incorrect",
       });
     }
 
-    // Générer le token
     const token = jwt.sign(
-      {
-        id: user._id,
-        role: user.role,
-        email: user.email,
-      },
+      { id: user._id, role: user.role },
       process.env.JWT_SECRET,
       { expiresIn: "30d" }
     );
 
-    // Si l'utilisateur est un patient, récupérer ses infos patient
-    let patientInfo = null;
-    if (user.role === "patient" && user.patientProfile) {
-      try {
-        patientInfo = await Patient.findById(user.patientProfile).select(
-          "numeroPatient nom prenom telephone"
-        );
-      } catch (err) {
-        console.log("⚠️ Could not fetch patient info");
-      }
-    }
+    const userResponse = user.toObject();
+    delete userResponse.password;
 
-    // Préparer la réponse
-    const response = {
+    console.log("✅ User login:", user.email);
+
+    res.json({
       success: true,
-      message: "Connexion réussie",
       token,
-      user: {
-        id: user._id,
-        name: user.name,
-        email: user.email,
-        role: user.role,
-      },
-    };
-
-    // Ajouter les infos du patient si disponibles
-    if (patientInfo) {
-      response.patient = {
-        id: patientInfo._id,
-        numeroPatient: patientInfo.numeroPatient,
-        nom: patientInfo.nom,
-        prenom: patientInfo.prenom,
-      };
-    }
-
-    console.log("✅ Login successful:", user.email);
-    res.json(response);
+      user: userResponse,
+    });
   } catch (error) {
-    console.error("❌ Login error:", error);
+    console.error("❌ Erreur login:", error.message);
     res.status(500).json({
-      message: "Erreur lors de la connexion",
-      error: error.message,
+      success: false,
+      message: "Erreur serveur",
     });
   }
 });
 
-// @route   GET /api/auth/me
-// @desc    Get current user info
-// @access  Private
+// ========== GET CURRENT USER (Support both User & Patient) ==========
 router.get("/me", protect, async (req, res) => {
   try {
-    const user = await User.findById(req.user.id).select("-password");
-
-    // Si c'est un patient, inclure ses infos patient
-    let patientInfo = null;
-    if (user.role === "patient" && user.patientProfile) {
-      patientInfo = await Patient.findById(user.patientProfile);
+    if (!req.user) {
+      return res.status(401).json({
+        success: false,
+        message: "Non authentifié",
+      });
     }
 
-    const response = {
-      user: {
-        id: user._id,
-        name: user.name,
-        email: user.email,
-        role: user.role,
-        isActive: user.isActive,
-      },
-    };
+    // ✨ Try Patient first
+    let patient = await Patient.findById(req.user._id).select("-password");
 
-    if (patientInfo) {
-      response.patient = patientInfo;
+    if (patient) {
+      if (!patient.isActive) {
+        return res.status(403).json({
+          success: false,
+          message: "Compte désactivé",
+        });
+      }
+
+      console.log("✅ Patient profile loaded:", patient.email);
+
+      return res.json({
+        success: true,
+        id: patient._id,
+        numeroPatient: patient.numeroPatient,
+        firstName: patient.firstName,
+        lastName: patient.lastName,
+        fullName: patient.fullName,
+        email: patient.email,
+        phone: patient.phone,
+        role: "patient",
+        age: patient.age,
+        bloodType: patient.medicalInfo?.bloodType,
+        hasNFCCard: patient.nfc.status === "active",
+        address: patient.address,
+        emergencyContact: patient.emergencyContact,
+        preferences: patient.preferences,
+        isActive: patient.isActive,
+      });
     }
 
-    res.json(response);
+    // If not Patient, get User
+    const user = await User.findById(req.user._id).select("-password");
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "Utilisateur non trouvé",
+      });
+    }
+
+    if (!user.isActive) {
+      return res.status(403).json({
+        success: false,
+        message: "Compte désactivé",
+      });
+    }
+
+    console.log("✅ User profile loaded:", user.email);
+
+    res.json({
+      success: true,
+      ...user.toObject(),
+    });
   } catch (error) {
-    console.error("Error fetching user:", error);
-    res.status(500).json({ message: "Server error" });
+    console.error("⚠️ Erreur /me:", error.message);
+    res.status(500).json({
+      success: false,
+      message: "Erreur lors de la récupération du profil",
+    });
+  }
+});
+
+// ========== PATIENT-SPECIFIC REGISTER (Optional dedicated endpoint) ==========
+router.post("/register/patient", async (req, res) => {
+  try {
+    const {
+      firstName,
+      lastName,
+      email,
+      password,
+      phone,
+      birthDate,
+      gender,
+      cin,
+      address,
+    } = req.body;
+
+    // Validation
+    if (
+      !firstName ||
+      !lastName ||
+      !email ||
+      !password ||
+      !birthDate ||
+      !gender
+    ) {
+      return res.status(400).json({
+        success: false,
+        message: "Tous les champs obligatoires doivent être remplis",
+      });
+    }
+
+    // Check existing
+    const existingPatient = await Patient.findOne({ email });
+    if (existingPatient) {
+      return res.status(400).json({
+        success: false,
+        message: "Cet email est déjà utilisé",
+      });
+    }
+
+    const existingUser = await User.findOne({ email });
+    if (existingUser) {
+      return res.status(400).json({
+        success: false,
+        message: "Cet email est déjà utilisé",
+      });
+    }
+
+    // Create patient
+    const patient = new Patient({
+      firstName,
+      lastName,
+      email,
+      password, // Will be hashed by pre-save middleware
+      phone,
+      birthDate,
+      gender,
+      cin,
+      address: address ? { street: address } : undefined,
+      isActive: true,
+    });
+
+    await patient.save();
+
+    const token = jwt.sign(
+      { id: patient._id, role: "patient" },
+      process.env.JWT_SECRET,
+      { expiresIn: "30d" }
+    );
+
+    console.log("✅ Nouveau patient inscrit:", patient.email);
+
+    res.status(201).json({
+      success: true,
+      message: "Inscription réussie",
+      token,
+      user: {
+        id: patient._id,
+        numeroPatient: patient.numeroPatient,
+        firstName: patient.firstName,
+        lastName: patient.lastName,
+        fullName: patient.fullName,
+        email: patient.email,
+        role: "patient",
+      },
+    });
+  } catch (error) {
+    console.error("❌ Erreur inscription patient:", error.message);
+    res.status(500).json({
+      success: false,
+      message: "Erreur serveur: " + error.message,
+    });
+  }
+});
+
+// ========== LOGOUT ==========
+router.post("/logout", protect, async (req, res) => {
+  try {
+    console.log("👋 Logout:", req.user.email);
+    res.json({
+      success: true,
+      message: "Déconnexion réussie",
+    });
+  } catch (error) {
+    console.error("Erreur logout:", error.message);
+    res.status(500).json({
+      success: false,
+      message: "Erreur serveur",
+    });
+  }
+});
+
+// ========== CHECK EMAIL AVAILABILITY ==========
+router.post("/check-email", async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    const userExists = await User.findOne({ email });
+    const patientExists = await Patient.findOne({ email });
+
+    res.json({
+      success: true,
+      available: !userExists && !patientExists,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Erreur serveur",
+    });
   }
 });
 

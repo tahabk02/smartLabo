@@ -59,21 +59,30 @@ function App() {
       }
   );
 
+  // 🔥 FIX: Initialisation corrigée pour éviter le logout automatique
   useEffect(() => {
     const initializeApp = async () => {
-      try {
-        const token = localStorage.getItem("token");
+      const token = localStorage.getItem("token");
 
-        if (token) {
-          console.log("🔍 Token trouvé, chargement de l'utilisateur...");
-          await dispatch(loadUser()).unwrap();
-          console.log("✅ Utilisateur chargé avec succès");
+      if (!token) {
+        console.log("⚠️ Aucun token trouvé");
+        setIsInitializing(false);
+        return;
+      }
+
+      try {
+        console.log("🔍 Token trouvé, chargement de l'utilisateur...");
+        const result = await dispatch(loadUser()).unwrap();
+
+        if (result && result._id) {
+          console.log("✅ Utilisateur chargé avec succès:", result.email);
         } else {
-          console.log("⚠️ Aucun token trouvé");
+          console.warn("⚠️ Réponse inattendue de loadUser:", result);
         }
       } catch (error) {
-        console.error("❌ Échec du chargement de l'utilisateur:", error);
-        localStorage.removeItem("token");
+        console.error("⚠️ Erreur lors du chargement de l'utilisateur:", error);
+        // 🔥 Ne PAS supprimer le token ici pour éviter les logouts non voulus
+        // Le token sera vérifié par l'interceptor axios si vraiment invalide
       } finally {
         setIsInitializing(false);
       }
