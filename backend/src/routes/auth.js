@@ -1,5 +1,4 @@
-// backend/routes/auth.routes.js - Updated to support Patient Portal
-
+// backend/routes/auth.js
 const express = require("express");
 const router = express.Router();
 const bcrypt = require("bcryptjs");
@@ -8,85 +7,44 @@ const User = require("../models/User");
 const Patient = require("../models/Patient");
 const { protect } = require("../middleware/authMiddleware");
 
-// ========== UNIVERSAL REGISTER (Auto-detect role) ==========
+/**
+ * @route   POST /api/auth/register
+ * @desc    Register new user (and create Patient if role is patient)
+ * @access  Public
+ */
 router.post("/register", async (req, res) => {
   try {
-    const {
-      name,
+    const { name, email, password, role, phone, address } = req.body;
+
+    console.log(
+      "📝 [REGISTER] New registration attempt:",
       email,
-      password,
-      role,
-      phone,
-      address,
-      firstName,
-      lastName,
-      birthDate,
-      gender,
-      cin,
-    } = req.body;
+      "Role:",
+      role
+    );
 
-    if (!email || !password) {
+    // Validation
+    if (!name || !email || !password) {
       return res.status(400).json({
-        success: false,
-        message: "Email et mot de passe requis",
+        message: "Veuillez fournir tous les champs obligatoires",
       });
     }
 
-    // Check if email exists in User or Patient
-    const existingUser = await User.findOne({ email });
-    const existingPatient = await Patient.findOne({ email });
-
-    if (existingUser || existingPatient) {
+    // Vérifier si l'utilisateur existe déjà
+    let user = await User.findOne({ email });
+    if (user) {
       return res.status(400).json({
-        success: false,
-        message: "Cet email est déjà utilisé",
+        message: "Un utilisateur avec cet email existe déjà",
       });
     }
 
+    // Hasher le mot de passe
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
 
-    // ✨ Si role = patient OU si on a firstName/lastName → créer Patient
-    if (role === "patient" || (firstName && lastName)) {
-      const patient = new Patient({
-        firstName: firstName || name?.split(" ")[0] || "Patient",
-        lastName: lastName || name?.split(" ")[1] || "",
-        email,
-        password: hashedPassword,
-        phone,
-        address: address ? { street: address } : undefined,
-        birthDate,
-        gender,
-        cin,
-        isActive: true,
-      });
-
-      await patient.save();
-
-      const token = jwt.sign(
-        { id: patient._id, role: "patient" },
-        process.env.JWT_SECRET,
-        { expiresIn: "30d" }
-      );
-
-      return res.status(201).json({
-        success: true,
-        token,
-        user: {
-          id: patient._id,
-          numeroPatient: patient.numeroPatient,
-          firstName: patient.firstName,
-          lastName: patient.lastName,
-          email: patient.email,
-          role: "patient",
-          hasNFCCard: patient.nfc.status === "active",
-        },
-      });
-    }
-
-    // Sinon créer User normal (admin, doctor, etc.)
-    const user = new User({
-      name: name || `${firstName} ${lastName}`,
+    // Créer l'utilisateur
+    user = new User({
+      name,
       email,
       password: hashedPassword,
       role: role || "patient",
@@ -96,345 +54,280 @@ router.post("/register", async (req, res) => {
     });
 
     await user.save();
+    console.log("✅ [REGISTER] User created:", user._id);
 
+    // ✅ SI LE RÔLE EST PATIENT : Créer automatiquement un document Patient
+    let patient = null;
+    if (user.role === "patient") {
+      try {
+        const patientCount = await Patient.countDocuments();
+        const numeroPatient = `PAT${String(patientCount + 1).padStart(6, "0")}`;
+
+        patient = new Patient({
+          user: user._id,
+          userId: user._id,
+          numeroPatient: numeroPatient,
+          nom: name.split(" ")[name.split(" ").length - 1] || name,
+          prenom: name.split(" ")[0] || name,
+          name: name,
+          email: email,
+          telephone: phone || "",
+          phone: phone || "",
+          adresse: address || "",
+          address: address || "",
+          dateNaissance: null,
+          birthDate: null,
+          sexe: "Non spécifié",
+          gender: "Non spécifié",
+          groupeSanguin: "Non spécifié",
+          bloodType: "Non spécifié",
+          isActive: true,
+          createdAt: new Date(),
+        });
+
+        await patient.save();
+        console.log(
+          "✅ [REGISTER] Patient profile created:",
+          patient._id,
+          numeroPatient
+        );
+      } catch (patientError) {
+        console.error(
+          "❌ [REGISTER] Error creating patient profile:",
+          patientError
+        );
+      }
+    }
+
+    // Générer le token JWT
     const token = jwt.sign(
-      { id: user._id, role: user.role },
+      {
+        id: user._id,
+        role: user.role,
+        email: user.email,
+      },
       process.env.JWT_SECRET,
       { expiresIn: "30d" }
     );
 
-    const userResponse = user.toObject();
-    delete userResponse.password;
+    // 🔥 CORRECTION : Préparer la réponse user SANS le token
+    const userResponse = {
+      _id: user._id,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      phone: user.phone,
+      address: user.address,
+      isActive: user.isActive,
+      // ❌ PAS de token ici !
+    };
 
+    // Si patient créé, ajouter ses infos
+    if (patient) {
+      userResponse.patientInfo = {
+        _id: patient._id,
+        numeroPatient: patient.numeroPatient,
+        nom: patient.nom,
+        prenom: patient.prenom,
+      };
+    }
+
+    console.log("✅ [REGISTER] Registration successful");
+
+    // 🔥 CORRECTION : Token à la racine de la réponse
     res.status(201).json({
       success: true,
-      token,
-      user: userResponse,
+      message: "Inscription réussie",
+      token: token, // ✅ Token ici à la racine !
+      user: userResponse, // ✅ User sans token
     });
   } catch (error) {
-    console.error("❌ Erreur inscription:", error.message);
+    console.error("❌ [REGISTER] Error:", error);
     res.status(500).json({
-      success: false,
-      message: "Erreur serveur: " + error.message,
+      message: "Erreur serveur lors de l'inscription",
+      error: error.message,
     });
   }
 });
 
-// ========== UNIVERSAL LOGIN (Check both User & Patient) ==========
+/**
+ * @route   POST /api/auth/login
+ * @desc    Login user
+ * @access  Public
+ */
 router.post("/login", async (req, res) => {
   try {
     const { email, password } = req.body;
 
+    console.log("🔐 [LOGIN] Login attempt:", email);
+
+    // Validation
     if (!email || !password) {
       return res.status(400).json({
-        success: false,
-        message: "Email et mot de passe requis",
+        message: "Veuillez fournir l'email et le mot de passe",
       });
     }
 
-    // ✨ Try to find in Patient collection first
-    let patient = await Patient.findOne({ email }).select("+password");
-
-    if (patient) {
-      if (!patient.isActive) {
-        return res.status(403).json({
-          success: false,
-          message: "Votre compte est désactivé",
-        });
-      }
-
-      const isMatch = await patient.comparePassword(password);
-      if (!isMatch) {
-        return res.status(401).json({
-          success: false,
-          message: "Email ou mot de passe incorrect",
-        });
-      }
-
-      // Update last login
-      patient.lastLogin = new Date();
-      await patient.save();
-
-      const token = jwt.sign(
-        { id: patient._id, role: "patient" },
-        process.env.JWT_SECRET,
-        { expiresIn: "30d" }
-      );
-
-      console.log("✅ Patient login:", patient.email);
-
-      return res.json({
-        success: true,
-        token,
-        user: {
-          id: patient._id,
-          numeroPatient: patient.numeroPatient,
-          firstName: patient.firstName,
-          lastName: patient.lastName,
-          fullName: patient.fullName,
-          email: patient.email,
-          phone: patient.phone,
-          role: "patient",
-          hasNFCCard: patient.nfc.status === "active",
-          age: patient.age,
-        },
-      });
-    }
-
-    // If not found in Patient, try User collection
+    // Vérifier si l'utilisateur existe
     const user = await User.findOne({ email }).select("+password");
-
     if (!user) {
+      console.log("❌ [LOGIN] User not found:", email);
       return res.status(401).json({
-        success: false,
         message: "Email ou mot de passe incorrect",
       });
     }
 
+    // Vérifier si le compte est actif
     if (!user.isActive) {
+      console.log("❌ [LOGIN] Account disabled:", email);
       return res.status(403).json({
-        success: false,
-        message: "Votre compte est désactivé",
+        message: "Votre compte est désactivé. Contactez l'administrateur.",
       });
     }
 
+    // Vérifier le mot de passe
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
+      console.log("❌ [LOGIN] Invalid password for:", email);
       return res.status(401).json({
-        success: false,
         message: "Email ou mot de passe incorrect",
       });
     }
 
+    // Générer le token
     const token = jwt.sign(
-      { id: user._id, role: user.role },
+      {
+        id: user._id,
+        role: user.role,
+        email: user.email,
+      },
       process.env.JWT_SECRET,
       { expiresIn: "30d" }
     );
 
-    const userResponse = user.toObject();
-    delete userResponse.password;
+    // 🔥 VÉRIFICATION : S'assurer que le token est bien généré
+    if (!token) {
+      console.error("❌ [LOGIN] Token generation failed for:", email);
+      return res.status(500).json({
+        message: "Erreur lors de la génération du token",
+      });
+    }
 
-    console.log("✅ User login:", user.email);
+    console.log("✅ [LOGIN] Token generated for:", email);
 
+    // Si c'est un patient, récupérer ses infos
+    let patientInfo = null;
+    if (user.role === "patient") {
+      const patient = await Patient.findOne({
+        $or: [{ user: user._id }, { userId: user._id }, { email: user.email }],
+      });
+
+      if (patient) {
+        patientInfo = {
+          _id: patient._id,
+          numeroPatient: patient.numeroPatient,
+          nom: patient.nom,
+          prenom: patient.prenom,
+        };
+        console.log("✅ [LOGIN] Patient info found:", patient.numeroPatient);
+      } else {
+        console.log("⚠️ [LOGIN] No patient profile found for:", email);
+      }
+    }
+
+    console.log("✅ [LOGIN] Login successful:", user.email);
+
+    // 🔥 CORRECTION CRITIQUE : Token à la racine !
     res.json({
       success: true,
-      token,
-      user: userResponse,
+      message: "Connexion réussie",
+      token: token, // ✅ TOKEN ICI À LA RACINE !
+      user: {
+        // ✅ USER SANS TOKEN
+        _id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        phone: user.phone,
+        address: user.address,
+        isActive: user.isActive,
+        patientInfo: patientInfo,
+        // ❌ PAS de token ici !
+      },
     });
   } catch (error) {
-    console.error("❌ Erreur login:", error.message);
+    console.error("❌ [LOGIN] Error:", error);
     res.status(500).json({
-      success: false,
-      message: "Erreur serveur",
+      message: "Erreur serveur lors de la connexion",
+      error: error.message,
     });
   }
 });
 
-// ========== GET CURRENT USER (Support both User & Patient) ==========
+/**
+ * @route   GET /api/auth/me
+ * @desc    Get current logged in user
+ * @access  Private
+ */
 router.get("/me", protect, async (req, res) => {
   try {
-    if (!req.user) {
-      return res.status(401).json({
-        success: false,
-        message: "Non authentifié",
-      });
-    }
-
-    // ✨ Try Patient first
-    let patient = await Patient.findById(req.user._id).select("-password");
-
-    if (patient) {
-      if (!patient.isActive) {
-        return res.status(403).json({
-          success: false,
-          message: "Compte désactivé",
-        });
-      }
-
-      console.log("✅ Patient profile loaded:", patient.email);
-
-      return res.json({
-        success: true,
-        id: patient._id,
-        numeroPatient: patient.numeroPatient,
-        firstName: patient.firstName,
-        lastName: patient.lastName,
-        fullName: patient.fullName,
-        email: patient.email,
-        phone: patient.phone,
-        role: "patient",
-        age: patient.age,
-        bloodType: patient.medicalInfo?.bloodType,
-        hasNFCCard: patient.nfc.status === "active",
-        address: patient.address,
-        emergencyContact: patient.emergencyContact,
-        preferences: patient.preferences,
-        isActive: patient.isActive,
-      });
-    }
-
-    // If not Patient, get User
     const user = await User.findById(req.user._id).select("-password");
 
     if (!user) {
       return res.status(404).json({
-        success: false,
         message: "Utilisateur non trouvé",
       });
     }
 
-    if (!user.isActive) {
-      return res.status(403).json({
-        success: false,
-        message: "Compte désactivé",
+    // Si c'est un patient, récupérer ses infos
+    let patientInfo = null;
+    if (user.role === "patient") {
+      const patient = await Patient.findOne({
+        $or: [{ user: user._id }, { userId: user._id }, { email: user.email }],
       });
-    }
 
-    console.log("✅ User profile loaded:", user.email);
+      if (patient) {
+        patientInfo = {
+          _id: patient._id,
+          numeroPatient: patient.numeroPatient,
+          nom: patient.nom,
+          prenom: patient.prenom,
+        };
+      }
+    }
 
     res.json({
       success: true,
-      ...user.toObject(),
-    });
-  } catch (error) {
-    console.error("⚠️ Erreur /me:", error.message);
-    res.status(500).json({
-      success: false,
-      message: "Erreur lors de la récupération du profil",
-    });
-  }
-});
-
-// ========== PATIENT-SPECIFIC REGISTER (Optional dedicated endpoint) ==========
-router.post("/register/patient", async (req, res) => {
-  try {
-    const {
-      firstName,
-      lastName,
-      email,
-      password,
-      phone,
-      birthDate,
-      gender,
-      cin,
-      address,
-    } = req.body;
-
-    // Validation
-    if (
-      !firstName ||
-      !lastName ||
-      !email ||
-      !password ||
-      !birthDate ||
-      !gender
-    ) {
-      return res.status(400).json({
-        success: false,
-        message: "Tous les champs obligatoires doivent être remplis",
-      });
-    }
-
-    // Check existing
-    const existingPatient = await Patient.findOne({ email });
-    if (existingPatient) {
-      return res.status(400).json({
-        success: false,
-        message: "Cet email est déjà utilisé",
-      });
-    }
-
-    const existingUser = await User.findOne({ email });
-    if (existingUser) {
-      return res.status(400).json({
-        success: false,
-        message: "Cet email est déjà utilisé",
-      });
-    }
-
-    // Create patient
-    const patient = new Patient({
-      firstName,
-      lastName,
-      email,
-      password, // Will be hashed by pre-save middleware
-      phone,
-      birthDate,
-      gender,
-      cin,
-      address: address ? { street: address } : undefined,
-      isActive: true,
-    });
-
-    await patient.save();
-
-    const token = jwt.sign(
-      { id: patient._id, role: "patient" },
-      process.env.JWT_SECRET,
-      { expiresIn: "30d" }
-    );
-
-    console.log("✅ Nouveau patient inscrit:", patient.email);
-
-    res.status(201).json({
-      success: true,
-      message: "Inscription réussie",
-      token,
       user: {
-        id: patient._id,
-        numeroPatient: patient.numeroPatient,
-        firstName: patient.firstName,
-        lastName: patient.lastName,
-        fullName: patient.fullName,
-        email: patient.email,
-        role: "patient",
+        _id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        phone: user.phone,
+        address: user.address,
+        isActive: user.isActive,
+        patientInfo: patientInfo,
       },
     });
   } catch (error) {
-    console.error("❌ Erreur inscription patient:", error.message);
+    console.error("❌ [GET ME] Error:", error);
     res.status(500).json({
-      success: false,
-      message: "Erreur serveur: " + error.message,
+      message: "Erreur serveur",
+      error: error.message,
     });
   }
 });
 
-// ========== LOGOUT ==========
-router.post("/logout", protect, async (req, res) => {
-  try {
-    console.log("👋 Logout:", req.user.email);
-    res.json({
-      success: true,
-      message: "Déconnexion réussie",
-    });
-  } catch (error) {
-    console.error("Erreur logout:", error.message);
-    res.status(500).json({
-      success: false,
-      message: "Erreur serveur",
-    });
-  }
-});
-
-// ========== CHECK EMAIL AVAILABILITY ==========
-router.post("/check-email", async (req, res) => {
-  try {
-    const { email } = req.body;
-
-    const userExists = await User.findOne({ email });
-    const patientExists = await Patient.findOne({ email });
-
-    res.json({
-      success: true,
-      available: !userExists && !patientExists,
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: "Erreur serveur",
-    });
-  }
+/**
+ * @route   POST /api/auth/logout
+ * @desc    Logout user (clear token client-side)
+ * @access  Private
+ */
+router.post("/logout", protect, (req, res) => {
+  res.json({
+    success: true,
+    message: "Déconnexion réussie",
+  });
 });
 
 module.exports = router;

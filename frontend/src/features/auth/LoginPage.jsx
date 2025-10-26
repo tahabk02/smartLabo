@@ -3,13 +3,12 @@ import { useDispatch, useSelector } from "react-redux";
 import { Link, useNavigate } from "react-router-dom";
 import { login, clearError } from "./authSlice";
 import { toast } from "react-toastify";
-
 import styles from "./Auth.module.css";
 
 const LoginPage = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
-  const { loading, error, isAuthenticated } = useSelector(
+  const { loading, error, isAuthenticated, user } = useSelector(
     (state) => state.auth
   );
 
@@ -21,24 +20,70 @@ const LoginPage = () => {
   const [rememberMe, setRememberMe] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
+  // 🔥 CORRECTION : Meilleure gestion de la redirection
   useEffect(() => {
     if (error) {
       toast.error(error);
       dispatch(clearError());
     }
-    if (isAuthenticated) {
-      navigate("/dashboard");
+  }, [error, dispatch]);
+
+  // 🔥 CORRECTION : Redirection basée sur l'authentification ET le rôle
+  useEffect(() => {
+    if (isAuthenticated && user) {
+      console.log("✅ User authenticated, redirecting...", user.role);
+
+      // Petite pause pour permettre à l'UI de se mettre à jour
+      setTimeout(() => {
+        if (user.role === "patient") {
+          navigate("/patient-space", { replace: true });
+        } else {
+          navigate("/dashboard", { replace: true });
+        }
+      }, 100);
     }
-  }, [error, isAuthenticated, navigate, dispatch]);
+  }, [isAuthenticated, user, navigate]);
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    dispatch(login(formData));
+
+    if (!formData.email || !formData.password) {
+      toast.error("Veuillez remplir tous les champs");
+      return;
+    }
+
+    console.log("🔄 Attempting login...");
+
+    try {
+      const result = await dispatch(login(formData)).unwrap();
+
+      if (result && result.user) {
+        console.log("✅ Login successful, user:", result.user.email);
+        // La redirection se fera automatiquement via le useEffect
+      }
+    } catch (error) {
+      console.error("❌ Login failed:", error);
+      // L'erreur est déjà gérée par le slice et affichée via toast
+    }
   };
+
+  // 🔥 CORRECTION : Empêcher l'affichage de la page de login si déjà authentifié
+  if (isAuthenticated) {
+    return (
+      <div className={styles["auth-page"]}>
+        <div className={styles["auth-card"]}>
+          <div className={styles["loading-container"]}>
+            <div className={styles["spinner"]}></div>
+            <p>Redirection en cours...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className={styles["auth-page"]}>
@@ -48,12 +93,12 @@ const LoginPage = () => {
           <h2>SmartLab</h2>
         </div>
 
-        <h3>Welcome Back</h3>
-        <p className={styles["auth-subtitle"]}>Sign in to your account</p>
+        <h3>Bienvenue</h3>
+        <p className={styles["auth-subtitle"]}>Connectez-vous à votre compte</p>
 
         <form onSubmit={handleSubmit}>
           <div className={styles["form-group"]}>
-            <label htmlFor="email">Email Address</label>
+            <label htmlFor="email">Adresse email</label>
             <div className={styles["input-wrapper"]}>
               <span className={styles["input-icon"]}>✉️</span>
               <input
@@ -63,15 +108,16 @@ const LoginPage = () => {
                 value={formData.email}
                 onChange={handleChange}
                 required
-                placeholder="your.email@example.com"
+                placeholder="votre.email@exemple.com"
                 className={styles["form-control"]}
                 autoComplete="email"
+                disabled={loading}
               />
             </div>
           </div>
 
           <div className={styles["form-group"]}>
-            <label htmlFor="password">Password</label>
+            <label htmlFor="password">Mot de passe</label>
             <div
               className={`${styles["input-wrapper"]} ${styles["password-wrapper"]}`}
             >
@@ -83,16 +129,22 @@ const LoginPage = () => {
                 value={formData.password}
                 onChange={handleChange}
                 required
-                placeholder="Enter your password"
+                placeholder="Entrez votre mot de passe"
                 className={styles["form-control"]}
                 minLength={6}
                 autoComplete="current-password"
+                disabled={loading}
               />
               <button
                 type="button"
                 className={styles["password-toggle"]}
                 onClick={() => setShowPassword(!showPassword)}
-                aria-label={showPassword ? "Hide password" : "Show password"}
+                aria-label={
+                  showPassword
+                    ? "Masquer le mot de passe"
+                    : "Afficher le mot de passe"
+                }
+                disabled={loading}
               >
                 {showPassword ? "👁️" : "👁️‍🗨️"}
               </button>
@@ -106,11 +158,12 @@ const LoginPage = () => {
                 id="remember"
                 checked={rememberMe}
                 onChange={(e) => setRememberMe(e.target.checked)}
+                disabled={loading}
               />
-              <label htmlFor="remember">Remember me</label>
+              <label htmlFor="remember">Se souvenir de moi</label>
             </div>
             <Link to="/forgot-password" className={styles["forgot-link"]}>
-              Forgot password?
+              Mot de passe oublié ?
             </Link>
           </div>
 
@@ -121,19 +174,20 @@ const LoginPage = () => {
             }`}
             disabled={loading}
           >
-            {loading ? "Signing in..." : "Sign In"}
+            {loading ? "Connexion..." : "Se connecter"}
           </button>
         </form>
 
         <div className={styles["divider"]}>
-          <span>Or continue with</span>
+          <span>Ou continuer avec</span>
         </div>
 
         <div className={styles["social-login"]}>
           <button
             type="button"
             className={styles["btn-social"]}
-            aria-label="Sign in with Google"
+            aria-label="Se connecter avec Google"
+            disabled={loading}
           >
             <img src="https://www.google.com/favicon.ico" alt="" />
             <span>Google</span>
@@ -141,7 +195,8 @@ const LoginPage = () => {
           <button
             type="button"
             className={styles["btn-social"]}
-            aria-label="Sign in with GitHub"
+            aria-label="Se connecter avec GitHub"
+            disabled={loading}
           >
             <img src="https://github.com/favicon.ico" alt="" />
             <span>GitHub</span>
@@ -150,7 +205,7 @@ const LoginPage = () => {
 
         <div className={styles["auth-links"]}>
           <p>
-            Don't have an account? <Link to="/register">Sign up</Link>
+            Vous n'avez pas de compte ? <Link to="/register">S'inscrire</Link>
           </p>
         </div>
       </div>

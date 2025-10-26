@@ -35,10 +35,8 @@ connectDB();
 // ==========================================
 app.use("/api/auth", require("./routes/auth"));
 app.use("/api/users", require("./routes/users"));
-app.use("/api/patients", require("./routes/patients"));
 app.use("/api/doctors", require("./routes/doctors"));
 app.use("/api/tasks", require("./routes/tasks"));
-app.use("/api/factures", require("./routes/factures"));
 app.use("/api/dashboard", require("./routes/dashboard"));
 app.use("/api/analyses", require("./routes/analyses"));
 app.use("/api/analyse-types", require("./routes/analyseTypes"));
@@ -54,12 +52,23 @@ app.use("/api/patient-analyses", require("./routes/patientAnalyses"));
 app.use("/api/prescriptions", require("./routes/prescriptions"));
 
 // ==========================================
-// 🆕 PATIENT PORTAL ROUTES
+// 🆕 PATIENT PORTAL ROUTES - CONSOLIDÉES
 // ==========================================
-app.use("/api/patient", require("./routes/patientAppointments"));
+// ✅ UNE SEULE ROUTE POUR TOUS LES ENDPOINTS PATIENT
+app.use("/api/patient", require("./routes/patientDashboardRoutes"));
 
-// ✨ NEW: NFC Management
-app.use("/api/patient/nfc", require("./routes/patient/nfc"));
+// ==========================================
+// ROUTES ADMIN/STAFF
+// ==========================================
+// Routes admin pour les patients (CRUD)
+app.use("/api/patients", require("./routes/patients"));
+
+// Routes admin pour les factures
+app.use("/api/factures", require("./routes/factures"));
+app.use("/api/invoices", require("./routes/factures"));
+
+// ✅ Rendez-vous Analyses
+app.use("/api/rendezvous", require("./routes/rendezvous"));
 
 // ==========================================
 // 🆕 PUBLIC NFC ROUTES (No Auth Required)
@@ -228,6 +237,7 @@ app.get("/", (req, res) => {
       medicalRecords: "/api/medical-records",
       patientAnalyses: "/api/patient-analyses",
       prescriptions: "/api/prescriptions",
+      rendezvous: "/api/rendezvous",
 
       // 🆕 Patient Portal
       patientPortal: {
@@ -237,6 +247,16 @@ app.get("/", (req, res) => {
         analyses: "/api/patient/analyses",
         invoices: "/api/patient/invoices",
         nfc: "/api/patient/nfc",
+      },
+
+      // 🆕 Invoice Routes
+      invoices: {
+        list: "/api/invoices (Admin/Staff)",
+        details: "/api/invoices/:id",
+        download: "/api/invoices/:id/download",
+        pay: "/api/invoices/:id/pay (Admin/Staff)",
+        stats: "/api/invoices/stats/overview (Admin/Staff)",
+        patientInvoices: "/api/patient/invoices",
       },
 
       // 🆕 Public NFC
@@ -258,6 +278,30 @@ app.use((req, res) => {
     message: "❌ Route not found",
     requestedUrl: req.originalUrl,
     method: req.method,
+    availableRoutes: [
+      "/api/auth",
+      "/api/users",
+      "/api/patients",
+      "/api/doctors",
+      "/api/tasks",
+      "/api/factures",
+      "/api/dashboard",
+      "/api/analyses",
+      "/api/analyse-types",
+      "/api/appointments",
+      "/api/chatbot",
+      "/api/ai-agent",
+      "/api/medical-records",
+      "/api/patient-analyses",
+      "/api/prescriptions",
+      "/api/rendezvous",
+      "/api/patient/appointments",
+      "/api/patient/invoices",
+      "/api/patient/nfc",
+      "/api/invoices",
+      "/api/nfc/verify/:token",
+      "/api/nfc/scan/:token",
+    ],
   });
 });
 
@@ -285,16 +329,55 @@ const server = app.listen(PORT, () => {
   console.log(`🌐 API URL: http://localhost:${PORT}`);
   console.log(`💚 Health: http://localhost:${PORT}/api/health`);
   console.log("=".repeat(60));
-  console.log("📋 New Routes:");
+  console.log("📋 Available Routes:");
+  console.log("   🔐 Auth:");
+  console.log("      POST   /api/auth/login");
+  console.log("      POST   /api/auth/register");
+  console.log("   ");
+  console.log("   👥 Users & Patients:");
+  console.log("      GET    /api/users");
+  console.log("      GET    /api/patients");
+  console.log("      GET    /api/doctors");
+  console.log("   ");
+  console.log("   📅 Appointments:");
+  console.log("      GET    /api/appointments");
+  console.log("      GET    /api/patient/appointments");
+  console.log("      GET    /api/rendezvous");
+  console.log("   ");
+  console.log("   💰 Invoices (NEW):");
+  console.log("      GET    /api/patient/invoices (Patient)");
+  console.log("      GET    /api/invoices (Admin/Staff)");
+  console.log("      GET    /api/invoices/:id");
+  console.log("      GET    /api/invoices/:id/download");
+  console.log("      PUT    /api/invoices/:id/pay");
+  console.log("      GET    /api/invoices/stats/overview");
+  console.log("   ");
+  console.log("   🧪 Analyses:");
+  console.log("      GET    /api/analyses");
+  console.log("      GET    /api/analyse-types");
+  console.log("      GET    /api/patient-analyses");
+  console.log("   ");
+  console.log("   📋 Medical Records:");
+  console.log("      GET    /api/medical-records");
+  console.log("      GET    /api/prescriptions");
+  console.log("   ");
   console.log("   💳 NFC System:");
   console.log("      GET    /api/patient/nfc (Get card)");
-  console.log("      POST   /api/patient/nfc/generate (Generate)");
+  console.log("      POST   /api/patient/nfc/generate");
   console.log("      GET    /api/patient/nfc/scan-history");
   console.log("      POST   /api/patient/nfc/report-lost");
   console.log("   ");
   console.log("   🌐 Public NFC:");
   console.log("      GET    /api/nfc/verify/:token (Public)");
   console.log("      POST   /api/nfc/scan/:token (Public)");
+  console.log("   ");
+  console.log("   🤖 AI Features:");
+  console.log("      POST   /api/chatbot");
+  console.log("      POST   /api/ai-agent");
+  console.log("   ");
+  console.log("   📊 Dashboard:");
+  console.log("      GET    /api/dashboard");
+  console.log("      GET    /api/patient/dashboard/stats");
   console.log("=".repeat(60));
 });
 

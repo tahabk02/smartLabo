@@ -19,14 +19,20 @@ export const login = createAsyncThunk(
         return rejectWithValue("Token manquant dans la réponse");
       }
 
-      // Sauvegarder le token
+      // 🔥 CORRECTION : Sauvegarder TOUT dans localStorage
       localStorage.setItem("token", response.data.token);
+      localStorage.setItem("user", JSON.stringify(response.data.user)); // 🔥 AJOUT IMPORTANT
+
       console.log(
         "💾 Token saved to localStorage:",
         localStorage.getItem("token")
       );
+      console.log(
+        "💾 User saved to localStorage:",
+        localStorage.getItem("user")
+      );
 
-      return response.data; // { success: true, user: {...}, token: "..." }
+      return response.data;
     } catch (error) {
       console.error("❌ Login error:", error.response?.data || error.message);
       return rejectWithValue(error.response?.data?.message || "Login failed");
@@ -49,10 +55,17 @@ export const register = createAsyncThunk(
         return rejectWithValue("Token manquant dans la réponse");
       }
 
+      // 🔥 CORRECTION : Sauvegarder TOUT dans localStorage
       localStorage.setItem("token", response.data.token);
+      localStorage.setItem("user", JSON.stringify(response.data.user)); // 🔥 AJOUT IMPORTANT
+
       console.log(
         "💾 Token saved to localStorage:",
         localStorage.getItem("token")
+      );
+      console.log(
+        "💾 User saved to localStorage:",
+        localStorage.getItem("user")
       );
 
       return response.data;
@@ -81,13 +94,19 @@ export const loadUser = createAsyncThunk(
       const response = await api.get("/auth/me");
       console.log("✅ User loaded:", response.data);
 
-      return response.data.user; // direct user object
+      // 🔥 CORRECTION : Mettre à jour localStorage avec les données fraîches
+      if (response.data.user) {
+        localStorage.setItem("user", JSON.stringify(response.data.user));
+      }
+
+      return response.data.user;
     } catch (error) {
       console.error(
         "❌ Load user error:",
         error.response?.data || error.message
       );
       localStorage.removeItem("token");
+      localStorage.removeItem("user"); // 🔥 CORRECTION : Nettoyer user aussi
       return rejectWithValue(
         error.response?.data?.message || "Failed to load user"
       );
@@ -102,6 +121,12 @@ export const updateUser = createAsyncThunk(
     try {
       const response = await api.put("/auth/me", userData);
       console.log("✅ User updated:", response.data);
+
+      // 🔥 CORRECTION : Mettre à jour localStorage
+      if (response.data.user) {
+        localStorage.setItem("user", JSON.stringify(response.data.user));
+      }
+
       return response.data.user;
     } catch (error) {
       console.error("❌ Update error:", error.response?.data || error.message);
@@ -115,16 +140,19 @@ export const updateUser = createAsyncThunk(
 const authSlice = createSlice({
   name: "auth",
   initialState: {
-    user: null,
+    // 🔥 CORRECTION : Charger user depuis localStorage
+    user: JSON.parse(localStorage.getItem("user")) || null,
     token: localStorage.getItem("token"),
-    isAuthenticated: !!localStorage.getItem("token"), // true si token existe
+    isAuthenticated: !!localStorage.getItem("token"),
     loading: false,
     error: null,
   },
   reducers: {
     logout: (state) => {
       console.log("🚪 Logging out...");
+      // 🔥 CORRECTION : Nettoyer COMPLÈTEMENT localStorage
       localStorage.removeItem("token");
+      localStorage.removeItem("user");
       state.user = null;
       state.token = null;
       state.isAuthenticated = false;
@@ -133,15 +161,31 @@ const authSlice = createSlice({
     clearError: (state) => {
       state.error = null;
     },
-    // Nouvelle action pour vérifier le token au chargement de l'app
-    checkAuth: (state) => {
+    // 🔥 NOUVEAU : Initialiser l'authentification depuis localStorage
+    initializeAuth: (state) => {
       const token = localStorage.getItem("token");
-      console.log("🔍 Checking auth, token:", token ? "exists" : "null");
-      if (token) {
-        state.token = token;
-        state.isAuthenticated = true;
+      const user = localStorage.getItem("user");
+
+      console.log("🔍 Initializing auth from localStorage...");
+      console.log("Token:", token ? "exists" : "null");
+      console.log("User:", user ? "exists" : "null");
+
+      if (token && user) {
+        try {
+          state.token = token;
+          state.user = JSON.parse(user);
+          state.isAuthenticated = true;
+          console.log("✅ Auth initialized successfully from localStorage");
+        } catch (error) {
+          console.error("❌ Error parsing user from localStorage:", error);
+          // Nettoyer les données corrompues
+          localStorage.removeItem("token");
+          localStorage.removeItem("user");
+          state.isAuthenticated = false;
+        }
       } else {
         state.isAuthenticated = false;
+        console.log("❌ No auth data found in localStorage");
       }
     },
   },
@@ -167,6 +211,9 @@ const authSlice = createSlice({
         state.user = null;
         state.token = null;
         state.error = action.payload;
+        // Nettoyer en cas d'erreur
+        localStorage.removeItem("token");
+        localStorage.removeItem("user");
       })
 
       // REGISTER
@@ -189,6 +236,8 @@ const authSlice = createSlice({
         state.user = null;
         state.token = null;
         state.error = action.payload;
+        localStorage.removeItem("token");
+        localStorage.removeItem("user");
       })
 
       // LOAD USER
@@ -228,5 +277,5 @@ const authSlice = createSlice({
   },
 });
 
-export const { logout, clearError, checkAuth } = authSlice.actions;
+export const { logout, clearError, initializeAuth } = authSlice.actions; // 🔥 REMPLACEZ checkAuth par initializeAuth
 export default authSlice.reducer;

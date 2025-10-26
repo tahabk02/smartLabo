@@ -1,284 +1,710 @@
 // src/features/patients/components/AppointmentsView.jsx
 
 import React, { useState, useEffect } from "react";
-import { Eye, FileText } from "lucide-react";
+import {
+  Calendar,
+  Clock,
+  User,
+  TestTube,
+  Plus,
+  X,
+  Eye,
+  CheckCircle,
+  XCircle,
+  AlertCircle,
+  Search,
+  ChevronDown,
+  ChevronUp,
+  FileText,
+  DollarSign,
+} from "lucide-react";
 import patientApi from "../services/patientApi";
+import styles from "./AppointmentsView.module.css";
 
 const AppointmentsView = () => {
-  const [analyses, setAnalyses] = useState([]);
+  const [appointments, setAppointments] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [selectedAnalysis, setSelectedAnalysis] = useState(null);
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [selectedAppointment, setSelectedAppointment] = useState(null);
+  const [filterStatus, setFilterStatus] = useState("all");
 
   useEffect(() => {
-    loadAnalyses();
+    loadAppointments();
   }, []);
 
-  const loadAnalyses = async () => {
+  const loadAppointments = async () => {
     try {
+      setLoading(true);
       const data = await patientApi.getAppointments();
-      setAnalyses(data);
+      setAppointments(data);
     } catch (error) {
-      console.error("Error loading analyses:", error);
+      console.error("Error loading appointments:", error);
     } finally {
       setLoading(false);
     }
   };
 
-  const viewResults = async (analysisId) => {
+  const handleCreateAppointment = async (appointmentData) => {
     try {
-      const results = await patientApi.getAnalysisResults(analysisId);
-      setSelectedAnalysis(results);
+      await patientApi.createAppointment(appointmentData);
+      alert("✅ Rendez-vous créé avec succès!");
+      setShowCreateModal(false);
+      loadAppointments();
     } catch (error) {
-      alert("Les résultats ne sont pas encore disponibles");
+      console.error("Error creating appointment:", error);
+      alert("❌ Erreur lors de la création du rendez-vous");
     }
   };
 
+  const handleCancelAppointment = async (appointmentId) => {
+    if (!window.confirm("Êtes-vous sûr de vouloir annuler ce rendez-vous?")) {
+      return;
+    }
+
+    try {
+      await patientApi.cancelAppointment(appointmentId);
+      alert("✅ Rendez-vous annulé");
+      loadAppointments();
+    } catch (error) {
+      console.error("Error cancelling appointment:", error);
+      alert("❌ Erreur lors de l'annulation");
+    }
+  };
+
+  const filteredAppointments = appointments.filter((apt) =>
+    filterStatus === "all" ? true : apt.status === filterStatus
+  );
+
   if (loading) {
-    return <LoadingSpinner />;
+    return (
+      <div className={styles.loadingContainer}>
+        <div className={styles.spinner}></div>
+      </div>
+    );
   }
 
   return (
-    <div className="space-y-6">
-      <h2 className="text-2xl font-bold text-gray-800">Mes Analyses</h2>
+    <div className={styles.container}>
+      {/* Header */}
+      <div className={styles.header}>
+        <h2 className={styles.pageTitle}>Mes Rendez-vous</h2>
+        <button
+          onClick={() => setShowCreateModal(true)}
+          className={styles.newButton}
+        >
+          <Plus className="w-4 h-4" />
+          Nouveau Rendez-vous
+        </button>
+      </div>
 
-      {analyses.length === 0 ? (
-        <div className="bg-white rounded-lg shadow p-8 text-center">
-          <FileText className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-          <p className="text-gray-500">Aucune analyse pour le moment</p>
+      {/* Filtres */}
+      <div className={styles.tabs}>
+        {[
+          { id: "all", label: "Tous" },
+          { id: "pending", label: "En attente" },
+          { id: "confirmed", label: "Confirmés" },
+          { id: "completed", label: "Terminés" },
+          { id: "cancelled", label: "Annulés" },
+        ].map((tab) => (
+          <button
+            key={tab.id}
+            onClick={() => setFilterStatus(tab.id)}
+            className={`${styles.tab} ${
+              filterStatus === tab.id ? styles.active : ""
+            }`}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </div>
+
+      {/* Liste des rendez-vous */}
+      {filteredAppointments.length === 0 ? (
+        <div className={styles.emptyState}>
+          <Calendar className={styles.emptyIcon} />
+          <h3 className={styles.emptyTitle}>Aucun rendez-vous</h3>
+          <p className={styles.emptyText}>
+            Vous n'avez pas encore de rendez-vous
+          </p>
+          <button
+            onClick={() => setShowCreateModal(true)}
+            className={styles.newButton}
+          >
+            <Plus className="w-4 h-4" />
+            Prendre un rendez-vous
+          </button>
         </div>
       ) : (
-        <div className="grid gap-4">
-          {analyses.map((analysis) => (
-            <AnalysisCard
-              key={analysis._id}
-              analysis={analysis}
-              onViewResults={viewResults}
+        <div className={styles.appointmentsList}>
+          {filteredAppointments.map((appointment) => (
+            <AppointmentCard
+              key={appointment._id}
+              appointment={appointment}
+              onViewDetails={() => setSelectedAppointment(appointment)}
+              onCancel={() => handleCancelAppointment(appointment._id)}
             />
           ))}
         </div>
       )}
 
-      {/* Results Modal */}
-      {selectedAnalysis && (
-        <ResultsModal
-          analysis={selectedAnalysis}
-          onClose={() => setSelectedAnalysis(null)}
+      {/* Modal de création */}
+      {showCreateModal && (
+        <CreateAppointmentModal
+          onClose={() => setShowCreateModal(false)}
+          onCreate={handleCreateAppointment}
+        />
+      )}
+
+      {/* Modal de détails */}
+      {selectedAppointment && (
+        <AppointmentDetailsModal
+          appointment={selectedAppointment}
+          onClose={() => setSelectedAppointment(null)}
+          onCancel={handleCancelAppointment}
         />
       )}
     </div>
   );
 };
 
-// AnalysisCard Component
-const AnalysisCard = ({ analysis, onViewResults }) => {
-  const canViewResults = ["completed", "validated", "delivered"].includes(
-    analysis.status
-  );
+// Carte de rendez-vous
+const AppointmentCard = ({ appointment, onViewDetails, onCancel }) => {
+  const [expanded, setExpanded] = useState(false);
+
+  const formatDate = (date) => {
+    return new Date(date).toLocaleDateString("fr-FR", {
+      weekday: "long",
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+    });
+  };
+
+  const formatTime = (date) => {
+    return new Date(date).toLocaleTimeString("fr-FR", {
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  };
+
+  const canCancel = ["pending", "confirmed"].includes(appointment.status);
 
   return (
-    <div className="bg-white rounded-lg shadow p-6 hover:shadow-lg transition">
-      <div className="flex justify-between items-start">
-        <div className="flex-1">
-          <h3 className="text-lg font-semibold text-gray-800">
-            {analysis.analysisType?.name}
+    <div
+      className={`${styles.appointmentCard} ${
+        styles[appointment.status] || ""
+      }`}
+    >
+      <div className={styles.appointmentHeader}>
+        <div className={styles.appointmentInfo}>
+          <h3 className={styles.doctorName}>
+            Rendez-vous - {formatDate(appointment.date)}
           </h3>
-          <div className="mt-2 space-y-1">
-            <p className="text-sm text-gray-600">
-              <span className="font-medium">Code:</span>{" "}
-              {analysis.analysisType?.code}
-            </p>
-            <p className="text-sm text-gray-600">
-              <span className="font-medium">Catégorie:</span>{" "}
-              {analysis.analysisType?.category}
-            </p>
-            <p className="text-sm text-gray-600">
-              <span className="font-medium">Date:</span>{" "}
-              {new Date(analysis.requestDate).toLocaleDateString("fr-FR")}
-            </p>
-            {analysis.invoice && (
-              <p className="text-sm text-gray-600">
-                <span className="font-medium">Facture:</span>{" "}
-                {analysis.invoice.numeroFacture}
-              </p>
-            )}
-          </div>
-        </div>
-
-        <div className="flex flex-col items-end gap-2">
-          <StatusBadge status={analysis.status} />
-          <p className="font-bold text-lg text-gray-800">
-            {analysis.price} MAD
+          <p className={styles.specialty}>
+            <Clock className="w-4 h-4" />
+            {formatTime(appointment.date)}
           </p>
+        </div>
+        <div
+          className={`${styles.appointmentBadge} ${styles[appointment.status]}`}
+        >
+          {appointment.status === "pending" && (
+            <AlertCircle className="w-4 h-4" />
+          )}
+          {appointment.status === "confirmed" && (
+            <CheckCircle className="w-4 h-4" />
+          )}
+          {appointment.status === "cancelled" && (
+            <XCircle className="w-4 h-4" />
+          )}
+          {appointment.status === "completed" && (
+            <CheckCircle className="w-4 h-4" />
+          )}
+          <span>{getStatusLabel(appointment.status)}</span>
         </div>
       </div>
 
-      {canViewResults && (
-        <button
-          onClick={() => onViewResults(analysis._id)}
-          className="mt-4 w-full flex items-center justify-center gap-2 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition"
-        >
-          <Eye className="w-4 h-4" />
-          Voir les résultats
-        </button>
+      <div className={styles.appointmentDetails}>
+        {appointment.assignedStaff && (
+          <div className={styles.detailItem}>
+            <User className="w-4 h-4" />
+            <span className={styles.detailValue}>
+              {appointment.assignedStaff.name}
+            </span>
+          </div>
+        )}
+        {appointment.analyses && appointment.analyses.length > 0 && (
+          <div className={styles.detailItem}>
+            <TestTube className="w-4 h-4" />
+            <span className={styles.detailValue}>
+              {appointment.analyses.length} analyse(s)
+            </span>
+          </div>
+        )}
+        {appointment.totalAmount > 0 && (
+          <div className={styles.detailItem}>
+            <DollarSign className="w-4 h-4" />
+            <span className={styles.detailValue}>
+              {appointment.totalAmount} MAD
+            </span>
+          </div>
+        )}
+      </div>
+
+      {appointment.notes && (
+        <div className={styles.appointmentNotes}>
+          <p className={styles.notesLabel}>Notes</p>
+          <p className={styles.notesText}>{appointment.notes}</p>
+        </div>
       )}
+
+      {/* Analyses sélectionnées */}
+      {expanded && appointment.analyses && appointment.analyses.length > 0 && (
+        <div className={styles.analysesSection}>
+          <h4>Analyses programmées:</h4>
+          <div className={styles.analysesList}>
+            {appointment.analyses.map((analysis, idx) => (
+              <div key={idx} className={styles.analysisItem}>
+                <span>{analysis.name}</span>
+                <span>{analysis.price} MAD</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      <div className={styles.appointmentActions}>
+        <button onClick={onViewDetails} className={styles.detailsButton}>
+          <Eye className="w-4 h-4" />
+          Détails
+        </button>
+        <button
+          onClick={() => setExpanded(!expanded)}
+          className={styles.detailsButton}
+        >
+          {expanded ? (
+            <ChevronUp className="w-4 h-4" />
+          ) : (
+            <ChevronDown className="w-4 h-4" />
+          )}
+          {expanded ? "Réduire" : "Étendre"}
+        </button>
+        {canCancel && (
+          <button onClick={onCancel} className={styles.cancelButton}>
+            <XCircle className="w-4 h-4" />
+            Annuler
+          </button>
+        )}
+      </div>
     </div>
   );
 };
 
-// StatusBadge Component
-const StatusBadge = ({ status }) => {
-  const statusConfig = {
-    pending: { label: "En attente", color: "bg-yellow-100 text-yellow-800" },
-    sample_collected: {
-      label: "Échantillon collecté",
-      color: "bg-blue-100 text-blue-800",
-    },
-    in_progress: { label: "En cours", color: "bg-blue-100 text-blue-800" },
-    completed: { label: "Terminée", color: "bg-green-100 text-green-800" },
-    validated: { label: "Validée", color: "bg-green-100 text-green-800" },
-    delivered: { label: "Livrée", color: "bg-purple-100 text-purple-800" },
+// Modal de création de rendez-vous avec sélection d'analyses
+const CreateAppointmentModal = ({ onClose, onCreate }) => {
+  const [step, setStep] = useState(1); // 1: Date, 2: Analyses, 3: Confirmation
+  const [availableSlots, setAvailableSlots] = useState([]);
+  const [availableAnalyses, setAvailableAnalyses] = useState([]);
+  const [selectedDate, setSelectedDate] = useState("");
+  const [selectedSlot, setSelectedSlot] = useState("");
+  const [selectedAnalyses, setSelectedAnalyses] = useState([]);
+  const [notes, setNotes] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
+
+  useEffect(() => {
+    loadAvailableSlots();
+    loadAvailableAnalyses();
+  }, []);
+
+  const loadAvailableSlots = async () => {
+    try {
+      const slots = await patientApi.getAvailableSlots();
+      setAvailableSlots(slots);
+    } catch (error) {
+      console.error("Error loading slots:", error);
+    }
   };
 
-  const config = statusConfig[status] || {
-    label: status,
-    color: "bg-gray-100 text-gray-800",
+  const loadAvailableAnalyses = async () => {
+    try {
+      const analyses = await patientApi.getAvailableAnalyses();
+      setAvailableAnalyses(analyses);
+    } catch (error) {
+      console.error("Error loading analyses:", error);
+    }
   };
+
+  const toggleAnalysis = (analysis) => {
+    setSelectedAnalyses((prev) => {
+      const exists = prev.find((a) => a._id === analysis._id);
+      if (exists) {
+        return prev.filter((a) => a._id !== analysis._id);
+      } else {
+        return [...prev, analysis];
+      }
+    });
+  };
+
+  const calculateTotal = () => {
+    return selectedAnalyses.reduce((sum, analysis) => sum + analysis.price, 0);
+  };
+
+  const handleSubmit = async () => {
+    if (!selectedSlot) {
+      alert("Veuillez sélectionner une date et heure");
+      return;
+    }
+
+    if (selectedAnalyses.length === 0) {
+      if (!window.confirm("Aucune analyse sélectionnée. Continuer?")) {
+        return;
+      }
+    }
+
+    setLoading(true);
+    try {
+      await onCreate({
+        date: selectedSlot,
+        analyses: selectedAnalyses.map((a) => a._id),
+        notes,
+        totalAmount: calculateTotal(),
+      });
+    } catch (error) {
+      console.error("Error:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const filteredAnalyses = availableAnalyses.filter((analysis) =>
+    analysis.name.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   return (
-    <span
-      className={`px-3 py-1 rounded-full text-sm font-medium ${config.color}`}
-    >
-      {config.label}
-    </span>
-  );
-};
+    <div className={styles.modalOverlay}>
+      <div className={styles.modal}>
+        <div className={styles.modalHeader}>
+          <h3 className={styles.modalTitle}>Nouveau Rendez-vous</h3>
+          <button onClick={onClose} className={styles.closeButton}>
+            <X className="w-6 h-6" />
+          </button>
+        </div>
 
-// ResultsModal Component
-const ResultsModal = ({ analysis, onClose }) => (
-  <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-    <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
-      <div className="sticky top-0 bg-white border-b px-6 py-4 flex justify-between items-center">
-        <h3 className="text-xl font-bold">
-          Résultats - {analysis.analysisType?.name}
-        </h3>
-        <button
-          onClick={onClose}
-          className="text-gray-500 hover:text-gray-700 text-2xl"
-        >
-          ×
-        </button>
-      </div>
+        {/* Indicateur d'étapes */}
+        <div className={styles.stepsIndicator}>
+          <div
+            className={`${styles.step} ${step >= 1 ? styles.activeStep : ""}`}
+          >
+            <div className={styles.stepNumber}>1</div>
+            <span>Date & Heure</span>
+          </div>
+          <div className={styles.stepLine}></div>
+          <div
+            className={`${styles.step} ${step >= 2 ? styles.activeStep : ""}`}
+          >
+            <div className={styles.stepNumber}>2</div>
+            <span>Analyses</span>
+          </div>
+          <div className={styles.stepLine}></div>
+          <div
+            className={`${styles.step} ${step >= 3 ? styles.activeStep : ""}`}
+          >
+            <div className={styles.stepNumber}>3</div>
+            <span>Confirmation</span>
+          </div>
+        </div>
 
-      <div className="p-6 space-y-6">
-        {/* Analysis Info */}
-        <div className="bg-gray-50 rounded-lg p-4">
-          <p className="text-sm text-gray-600">
-            <span className="font-medium">Date:</span>{" "}
-            {new Date(analysis.resultDate).toLocaleDateString("fr-FR")}
-          </p>
-          {analysis.performedBy && (
-            <p className="text-sm text-gray-600">
-              <span className="font-medium">Réalisé par:</span>{" "}
-              {analysis.performedBy.name}
-            </p>
+        <div className={styles.modalBody}>
+          {/* Étape 1: Sélection de date */}
+          {step === 1 && (
+            <div className={styles.stepContent}>
+              <h4>Choisissez une date et heure</h4>
+              <div className={styles.slotsGrid}>
+                {availableSlots.map((slot) => (
+                  <button
+                    key={slot}
+                    onClick={() => setSelectedSlot(slot)}
+                    className={`${styles.slotButton} ${
+                      selectedSlot === slot ? styles.slotSelected : ""
+                    }`}
+                  >
+                    <Calendar className="w-4 h-4" />
+                    <div>
+                      <div className={styles.slotDate}>
+                        {new Date(slot).toLocaleDateString("fr-FR", {
+                          weekday: "short",
+                          day: "numeric",
+                          month: "short",
+                        })}
+                      </div>
+                      <div className={styles.slotTime}>
+                        {new Date(slot).toLocaleTimeString("fr-FR", {
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })}
+                      </div>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </div>
           )}
-          {analysis.validatedBy && (
-            <p className="text-sm text-gray-600">
-              <span className="font-medium">Validé par:</span>{" "}
-              {analysis.validatedBy.name}
-            </p>
+
+          {/* Étape 2: Sélection d'analyses */}
+          {step === 2 && (
+            <div className={styles.stepContent}>
+              <h4>Sélectionnez les analyses souhaitées</h4>
+
+              {/* Recherche */}
+              <div className={styles.searchBox}>
+                <Search className="w-4 h-4" />
+                <input
+                  type="text"
+                  placeholder="Rechercher une analyse..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className={styles.searchInput}
+                />
+              </div>
+
+              {/* Liste des analyses */}
+              <div className={styles.analysesGrid}>
+                {filteredAnalyses.map((analysis) => {
+                  const isSelected = selectedAnalyses.some(
+                    (a) => a._id === analysis._id
+                  );
+                  return (
+                    <div
+                      key={analysis._id}
+                      onClick={() => toggleAnalysis(analysis)}
+                      className={`${styles.analysisCard} ${
+                        isSelected ? styles.analysisSelected : ""
+                      }`}
+                    >
+                      <div className={styles.analysisCheckbox}>
+                        {isSelected && <CheckCircle className="w-5 h-5" />}
+                      </div>
+                      <div className={styles.analysisInfo}>
+                        <h5>{analysis.name}</h5>
+                        <p className={styles.analysisCategory}>
+                          {analysis.category}
+                        </p>
+                        <p className={styles.analysisPrice}>
+                          {analysis.price} MAD
+                        </p>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Résumé sélection */}
+              {selectedAnalyses.length > 0 && (
+                <div className={styles.selectionSummary}>
+                  <h5>Analyses sélectionnées: {selectedAnalyses.length}</h5>
+                  <div className={styles.selectedList}>
+                    {selectedAnalyses.map((analysis) => (
+                      <div key={analysis._id} className={styles.selectedItem}>
+                        <span>{analysis.name}</span>
+                        <span>{analysis.price} MAD</span>
+                      </div>
+                    ))}
+                  </div>
+                  <div className={styles.totalPrice}>
+                    <strong>Total:</strong>
+                    <strong>{calculateTotal()} MAD</strong>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Étape 3: Confirmation */}
+          {step === 3 && (
+            <div className={styles.stepContent}>
+              <h4>Confirmation du rendez-vous</h4>
+
+              <div className={styles.confirmationSummary}>
+                <div className={styles.summarySection}>
+                  <h5>Date et heure</h5>
+                  <p>
+                    {new Date(selectedSlot).toLocaleString("fr-FR", {
+                      weekday: "long",
+                      year: "numeric",
+                      month: "long",
+                      day: "numeric",
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })}
+                  </p>
+                </div>
+
+                <div className={styles.summarySection}>
+                  <h5>Analyses ({selectedAnalyses.length})</h5>
+                  {selectedAnalyses.map((analysis) => (
+                    <div key={analysis._id} className={styles.summaryItem}>
+                      <span>{analysis.name}</span>
+                      <span>{analysis.price} MAD</span>
+                    </div>
+                  ))}
+                </div>
+
+                <div className={styles.summaryTotal}>
+                  <span>Montant total:</span>
+                  <strong>{calculateTotal()} MAD</strong>
+                </div>
+
+                <div className={styles.formGroup}>
+                  <label className={styles.label}>Notes (optionnel)</label>
+                  <textarea
+                    value={notes}
+                    onChange={(e) => setNotes(e.target.value)}
+                    placeholder="Ajoutez des notes ou instructions particulières..."
+                    className={styles.textarea}
+                    rows={4}
+                  />
+                </div>
+              </div>
+            </div>
           )}
         </div>
 
-        {/* Results */}
-        {analysis.results && analysis.results.length > 0 && (
-          <div>
-            <h4 className="font-semibold mb-3">Résultats</h4>
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-4 py-2 text-left text-sm font-medium text-gray-700">
-                      Paramètre
-                    </th>
-                    <th className="px-4 py-2 text-left text-sm font-medium text-gray-700">
-                      Valeur
-                    </th>
-                    <th className="px-4 py-2 text-left text-sm font-medium text-gray-700">
-                      Unité
-                    </th>
-                    <th className="px-4 py-2 text-left text-sm font-medium text-gray-700">
-                      Valeurs normales
-                    </th>
-                    <th className="px-4 py-2 text-left text-sm font-medium text-gray-700">
-                      Statut
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {analysis.results.map((result, idx) => (
-                    <tr key={idx} className="border-t">
-                      <td className="px-4 py-2">{result.parameter}</td>
-                      <td className="px-4 py-2 font-medium">{result.value}</td>
-                      <td className="px-4 py-2">{result.unit}</td>
-                      <td className="px-4 py-2">{result.normalRange || "-"}</td>
-                      <td className="px-4 py-2">
-                        {result.isAbnormal ? (
-                          <span className="px-2 py-1 bg-red-100 text-red-800 rounded text-sm">
-                            Anormal
-                          </span>
-                        ) : (
-                          <span className="px-2 py-1 bg-green-100 text-green-800 rounded text-sm">
-                            Normal
-                          </span>
-                        )}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+        {/* Actions */}
+        <div className={styles.formActions}>
+          {step > 1 && (
+            <button
+              onClick={() => setStep(step - 1)}
+              className={styles.cancelModalButton}
+            >
+              Retour
+            </button>
+          )}
+          {step < 3 ? (
+            <button
+              onClick={() => setStep(step + 1)}
+              disabled={step === 1 && !selectedSlot}
+              className={styles.submitButton}
+            >
+              Suivant
+            </button>
+          ) : (
+            <button
+              onClick={handleSubmit}
+              disabled={loading}
+              className={styles.submitButton}
+            >
+              {loading ? "Création..." : "Confirmer le rendez-vous"}
+            </button>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// Modal de détails
+const AppointmentDetailsModal = ({ appointment, onClose, onCancel }) => {
+  const canCancel = ["pending", "confirmed"].includes(appointment.status);
+
+  return (
+    <div className={styles.modalOverlay}>
+      <div className={styles.modal}>
+        <div className={styles.modalHeader}>
+          <h3 className={styles.modalTitle}>Détails du Rendez-vous</h3>
+          <button onClick={onClose} className={styles.closeButton}>
+            <X className="w-6 h-6" />
+          </button>
+        </div>
+
+        <div className={styles.detailsContent}>
+          {/* Informations générales */}
+          <div className={styles.detailsSection}>
+            <h4>Informations générales</h4>
+            <div className={styles.detailsGrid}>
+              <div>
+                <span>Date:</span>
+                <strong>
+                  {new Date(appointment.date).toLocaleDateString("fr-FR")}
+                </strong>
+              </div>
+              <div>
+                <span>Heure:</span>
+                <strong>
+                  {new Date(appointment.date).toLocaleTimeString("fr-FR")}
+                </strong>
+              </div>
+              <div>
+                <span>Statut:</span>
+                <span
+                  className={`${styles.appointmentBadge} ${
+                    styles[appointment.status]
+                  }`}
+                >
+                  {getStatusLabel(appointment.status)}
+                </span>
+              </div>
             </div>
           </div>
-        )}
 
-        {/* Interpretation */}
-        {analysis.interpretation && (
-          <div>
-            <h4 className="font-semibold mb-2">Interprétation</h4>
-            <p className="text-gray-700 bg-blue-50 p-4 rounded-lg">
-              {analysis.interpretation}
-            </p>
-          </div>
-        )}
+          {/* Analyses */}
+          {appointment.analyses && appointment.analyses.length > 0 && (
+            <div className={styles.detailsSection}>
+              <h4>Analyses programmées</h4>
+              {appointment.analyses.map((analysis, idx) => (
+                <div key={idx} className={styles.analysisDetailItem}>
+                  <TestTube className="w-4 h-4" />
+                  <div>
+                    <strong>{analysis.name}</strong>
+                    <p>{analysis.price} MAD</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
 
-        {/* Conclusion */}
-        {analysis.conclusion && (
-          <div>
-            <h4 className="font-semibold mb-2">Conclusion</h4>
-            <p className="text-gray-700 bg-green-50 p-4 rounded-lg">
-              {analysis.conclusion}
-            </p>
-          </div>
-        )}
-      </div>
+          {/* Facture */}
+          {appointment.invoiceId && (
+            <div className={styles.detailsSection}>
+              <h4>Facture</h4>
+              <p>Numéro: {appointment.invoiceId}</p>
+              <p>Montant: {appointment.totalAmount} MAD</p>
+            </div>
+          )}
+        </div>
 
-      <div className="sticky bottom-0 bg-gray-50 px-6 py-4 flex justify-end">
-        <button
-          onClick={onClose}
-          className="px-6 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300"
-        >
-          Fermer
-        </button>
+        <div className={styles.formActions}>
+          {canCancel && (
+            <button
+              onClick={() => {
+                onCancel(appointment._id);
+                onClose();
+              }}
+              className={styles.cancelButton}
+            >
+              Annuler le RDV
+            </button>
+          )}
+          <button onClick={onClose} className={styles.cancelModalButton}>
+            Fermer
+          </button>
+        </div>
       </div>
     </div>
-  </div>
-);
+  );
+};
 
-// LoadingSpinner Component
-const LoadingSpinner = () => (
-  <div className="flex justify-center items-center h-64">
-    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
-  </div>
-);
+// Helper functions
+const getStatusLabel = (status) => {
+  const labels = {
+    pending: "En attente",
+    confirmed: "Confirmé",
+    in_progress: "En cours",
+    completed: "Terminé",
+    cancelled: "Annulé",
+    no_show: "Non honoré",
+  };
+  return labels[status] || status;
+};
 
 export default AppointmentsView;

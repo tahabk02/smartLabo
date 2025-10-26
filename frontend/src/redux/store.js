@@ -1,22 +1,20 @@
-// src/store.js
+// src/redux/store.js
 import { configureStore } from "@reduxjs/toolkit";
+import { combineReducers } from "@reduxjs/toolkit";
 
-// Import slices
+// Import slices unifiés
 import authReducer from "./features/auth/authSlice";
 import patientsReducer from "./features/patients/patientsSlice";
 import facturesReducer from "./features/factures/facturesSlice";
-import rdvReducer from "./features/rdv/appointmentsSlice";
+import appointmentsReducer from "./features/appointments/appointmentsSlice"; // Slice unifié
 
-// Combine reducers
-import { combineReducers } from "@reduxjs/toolkit";
 const rootReducer = combineReducers({
   auth: authReducer,
   patients: patientsReducer,
   factures: facturesReducer,
-  rdv: rdvReducer,
+  appointments: appointmentsReducer, // Remplace rdvReducer
 });
 
-// Configure store
 const store = configureStore({
   reducer: rootReducer,
   middleware: (getDefaultMiddleware) =>

@@ -278,4 +278,19 @@ router.get("/stats/overview", protect, async (req, res) => {
   }
 });
 
+// ==========================================
+// @route   GET /api/analyses/mes-analyses
+// @desc    Get analyses assigned to current patient
+// @access  Private (Patient)
+// ==========================================
+router.get("/mes-analyses", protect, authorize("patient"), async (req, res) => {
+  try {
+    const analyses = await Analysis.find({ patient: req.user._id });
+    res.json(analyses);
+  } catch (error) {
+    console.error("Error fetching patient's analyses:", error.message);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
 module.exports = router;
